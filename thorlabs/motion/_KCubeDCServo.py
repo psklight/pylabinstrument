@@ -41,8 +41,28 @@ lib = cdll.LoadLibrary("Thorlabs.MotionControl.KCube.DCServo.dll")
 #    'PRM1-Z8':      1919.64,
 #    'CR1-Z7':       12288}
 
+class StructureEx(Structure):
+
+    def getdict(self):
+        return dict((f, getattr(self, f)) for f, _ in self._fields_)
+
+    def loaddict(self, d):
+        """
+        d -- a dictionary of parameters. The keys of the dictionary much match the attributes of the class.
+        """
+        for f in d.keys():
+            if not hasattr(self, f):
+                raise AttributeError('Given dictionary has unmatched attributes.')
+            for field, ctype in self._fields_:
+                if field == f:
+                    break
+            if ctype in [c_short, c_long, c_int, c_int16, c_int32, c_uint, c_ushort, c_ulong]:
+                setattr(self, f, ctype(int(d[f])))
+            if ctype in [c_float, c_double]:
+                setattr(self, f, ctype(float(d[f])))
+
 # Define data structures
-class TLI_DeviceInfo(Structure):
+class TLI_DeviceInfo(StructureEx):
     _fields_ = [("typeID", c_dword),
                 ("description", (65 * c_char)),
                 ("serialNo", (9 * c_char)),
@@ -70,7 +90,7 @@ class TLI_DeviceInfo(Structure):
         return str(d)
 
 
-class TLI_HardwareInformation(Structure):
+class TLI_HardwareInformation(StructureEx):
     _fields_ = [("serialNumber", c_dword),
                 ("modelNumber", (8 * c_char)),
                 ("type", c_word),
@@ -82,41 +102,41 @@ class TLI_HardwareInformation(Structure):
                 ("numChannels", c_short)]
 
 
-class MOT_VelocityParameters(Structure):
+class MOT_VelocityParameters(StructureEx):
     _fields_ = [("minVelocity", c_int),
                 ("acceleration", c_int),
                 ("maxVelocity", c_int)]
 
 
-class MOT_JogParameters(Structure):
+class MOT_JogParameters(StructureEx):
     _fields_ = [("mode", MOT_JogModes),
                 ("stepSize", c_uint),
                 ("velParams", MOT_VelocityParameters),
                 ("stopMode", MOT_StopModes)]
 
 
-class MOT_HomingParameters(Structure):
+class MOT_HomingParameters(StructureEx):
     _fields_ = [("direction", MOT_TravelDirection),
                 ("limitSwitch", MOT_HomeLimitSwitchDirection),
                 ("velocity", c_uint),
                 ("offsetDistance", c_uint)]
 
 
-class MOT_LimitSwitchParameters(Structure):
+class MOT_LimitSwitchParameters(StructureEx):
     _fields_ = [("clockwiseHardwareLimit", MOT_LimitSwitchModes),
                 ("anticlockwiseHardwareLimit", MOT_LimitSwitchModes),
                 ("clockwisePosition", c_dword),
                 ("anticlockwisePosition", c_dword),
                 ("softLimitMode", MOT_LimitSwitchSWModes)]
 
-class MOT_DC_PIDParameters(Structure):
+class MOT_DC_PIDParameters(StructureEx):
     _fields_ = [("proportionalGain", c_int),
                 ("integralGain", c_int),
                 ("differentialGain", c_int),
                 ("integralLimit", c_int),
                 ("parameterFilter", c_word)]
 
-class KMOT_MMIParams(Structure):
+class KMOT_MMIParams(StructureEx):
     _fields_ = [("JoystickMODE", c_int),
                 ("JoystickMaxVelocity", c_int32),
                 ("JoystickAcceleration", c_int32),
@@ -126,13 +146,13 @@ class KMOT_MMIParams(Structure):
                 ("DisplayIntensity", c_int16),
                 ("reserved",6*c_int16)]
 
-class KMOT_TriggerConfig(Structure):
+class KMOT_TriggerConfig(StructureEx):
     _fields_ = [("Trigger1Mode", c_int),
                 ("Trigger1Polarity", c_int),
                 ("Trigger2Mode", c_int),
                 ("Trigger2Polarity", c_int)]
 
-class KMOT_TriggerParams(Structure):
+class KMOT_TriggerParams(StructureEx):
     _fields_ = [("TriggerStartPositionFwd", c_int32),
                 ("TriggerIntervalFwd", c_int32),
                 ("TriggerPulseCountFwd", c_int32),
@@ -177,6 +197,10 @@ CC_GetHardwareInfoBlock = bind(lib, "CC_GetHardwareInfoBlock", [POINTER(c_char),
 CC_ClearMessageQueue = bind(lib, "CC_ClearMessageQueue", [POINTER(c_char)], None)
 
 CC_GetMotorParamsExt = bind(lib, "CC_GetMotorParamsExt", [POINTER(c_char), POINTER(c_double), POINTER(c_double), POINTER(c_double)], c_short)
+CC_GetMotorVelocityLimits = bind(lib, "CC_GetMotorVelocityLimits", [POINTER(c_char), POINTER(c_double), POINTER(c_double)], c_short)
+CC_GetMotorTravelMode = bind(lib, "CC_GetMotorTravelMode", [POINTER(c_char)], MOT_TravelModes)
+CC_GetMotorTravelLimits = bind(lib, "CC_GetMotorTravelLimits", [POINTER(c_char), POINTER(c_double), POINTER(c_double)], c_short)
+
 CC_SetMotorParamsExt = bind(lib, "CC_SetMotorParamsExt", [POINTER(c_char), c_double, c_double, c_double], c_short)
 CC_SetMotorTravelLimits = bind(lib, "CC_SetMotorTravelLimits", [POINTER(c_char), c_double, c_double], c_short)
 CC_SetMotorTravelMode = bind(lib, "CC_SetMotorTravelMode", [POINTER(c_char), MOT_TravelModes], c_short)
@@ -188,3 +212,9 @@ CC_LoadSettings = bind(lib, "CC_LoadSettings", [POINTER(c_char)], c_bool)
 CC_PersistSettings = bind(lib, "CC_PersistSettings", [POINTER(c_char)], c_bool)
 
 CC_CanHome = bind(lib, "CC_CanHome", [POINTER(c_char)], c_bool)
+
+CC_GetDCPIDParams = bind(lib, "CC_GetDCPIDParams", [POINTER(c_char), POINTER(MOT_DC_PIDParameters)], c_short)
+CC_SetDCPIDParams = bind(lib, "CC_SetDCPIDParams", [POINTER(c_char), POINTER(MOT_DC_PIDParameters)], c_short)
+
+CC_GetHomingParamsBlock = bind(lib, "CC_GetHomingParamsBlock", [POINTER(c_char), POINTER(MOT_HomingParameters)], c_short)
+CC_SetHomingParamsBlock = bind(lib, "CC_SetHomingParamsBlock", [POINTER(c_char), POINTER(MOT_HomingParameters)], c_short)

@@ -59,3 +59,39 @@ def getDeviceSettings(stagename):
     root = root[0]
             
     return extractor(root)
+
+def getDCPIDParams(settings_dict):
+    params = dict()
+    params['proportionalGain']  = settings_dict['DCServo']['DCProp']
+    params['integralGain']      = settings_dict['DCServo']['DCInt']
+    params['differentialGain']  = settings_dict['DCServo']['DCDiff']
+    params['integralLimit']     = settings_dict['DCServo']['DCIntLim']
+    params['parameterFilter']   = 15
+    return params
+
+def getHomingParams(settings_dict):
+    params = dict()
+    params['direction'] = settings_dict['Home']['HomeDir']
+    params['limitSwitch'] = settings_dict['Home']['HomeLimitSwitch']
+    params['velocity'] = settings_dict['Home']['HomeVel']
+    params['offsetDistance'] = settings_dict['Home']['HomeZeroOffset']
+    return params
+
+def getMotorParams(settings_dict):
+    motorparams = dict()
+    motorparams['stepPerRev'] = settings_dict['Physical']['StepsPerRev']
+    motorparams['gearboxRatio'] = settings_dict['Physical']['GearboxRatio']
+    motorparams['pitch'] = settings_dict['Physical']['Pitch']
+    return motorparams
+
+def getMotorTravelLimitsParams(settings_dict):
+    limitparams = dict()
+    limitparams['minPosition'] = settings_dict['Physical']['MinPos']
+    limitparams['maxPosition'] = settings_dict['Physical']['MaxPos']
+    return limitparams
+
+def getMotorVelocityLimitsParams(settings_dict):
+    speedparams = dict()
+    speedparams['maxVelocity'] = settings['Physical']['MaxVel']
+    speedparams['maxAcceleration'] = settings['Physical']['MaxAccn']
+    return speedparams
