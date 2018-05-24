@@ -127,3 +127,11 @@ Open = bind(lib, "SC_Open", [POINTER(c_char)], c_short)
 Close = bind(lib, "SC_Close", [POINTER(c_char)], None)
 
 Identify = bind(lib, "SC_Identify", [POINTER(c_char)], None)
+
+GetOperatingMode = bind(lib, "SC_GetOperatingMode", [POINTER(c_char)], SC_OperatingModes)
+SetOperatingMode = bind(lib, "SC_SetOperatingMode", [POINTER(c_char), SC_OperatingModes], c_short)
+
+GetOperatingState = bind(lib, "SC_GetOperatingState", [POINTER(c_char)], SC_OperatingStates)
+SetOperatingState = bind(lib, "SC_SetOperatingState", [POINTER(c_char), SC_OperatingStates], c_short)
+
+GetSolenoidState = bind(lib, "SC_GetSolenoidState", [POINTER(c_char)], SC_SolenoidStates)

@@ -143,7 +143,7 @@ KSC_TriggerPolarityHigh = c_int16(0x01)
 KSC_TriggerPolarityLow = c_int16(0x02)
 
 # SC_OperatingMode
-SC_OperatingMode = c_byte
+SC_OperatingModes = c_byte
 SC_Manual = c_byte(0x01)
 SC_Single = c_byte(0x02)
 SC_Auto = c_byte(0x03)
