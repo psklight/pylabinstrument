@@ -30,6 +30,17 @@ from time import sleep
 from . import _KCubeSolenoid as K
 from . import _motor
 
+operatingMode_dict = {'Manual': enum.SC_Manual, 'Single': enum.SC_Single, 'Auto': enum.SC_Auto, 'Triggered': enum.SC_Triggered}
+print(operatingMode_dict.items())
+#operatingMode_dict_reverse = {val: key for key, val in operatingMode_dict.items()}
+operatingMode_dict_reverse = dict([ [val_c.value, key] for key, val_c in operatingMode_dict.items()])
+
+operatingStates_dict = {'Active': enum.SC_Active, 'Inactive': enum.SC_Inactive}
+operatingStates_dict_reverse = {val_c.value: key for key, val_c in operatingStates_dict.items()}
+
+solenoidStates_dict = {'Open': enum.SC_SolenoidOpen, 'Closed': enum.SC_SolenoidClosed}
+solenoidStates_dict_reverse = {val_c.value: key for key, val_c in solenoidStates_dict.items()}
+
 class Motor(_motor.Motor):
 
     def __init__(self, serial_no):
@@ -70,3 +81,59 @@ class Motor(_motor.Motor):
     serial_no_c = property(get_serial_no_c, set_serial_no_c)
 
     ####################################################
+    def getOperatingMode(self):
+        mode = self.lib.GetOperatingMode(self.serial_no_c)
+        return operatingMode_dict_reverse[mode]
+
+    def setOperatingMode(self, mode):
+
+        if self._verbose:
+            self.verboseMessage('Setting operating mode...')
+
+        if type(mode)==type(' '):
+            if mode.lower().capitalize() not in list(operatingMode_dict.keys()):
+                raise ValueError('Invalid mode. Mode must be in {}.'.format(operatingMode_dict.keys()))
+            mode = operatingMode_dict[mode.lower().capitalize()]
+
+        if mode.value not in list(operatingMode_dict_reverse.keys()):
+            raise ValueError('Invalid mode. Mode must be in {}.'.format(operatingMode_dict.keys()))
+
+        err_code = self.lib.SetOperatingMode(self.serial_no_c, mode)
+
+        if err_code==0:
+            if self._verbose:
+                self.verboseMessage('Done setting operating mode.')
+        else:
+            raise Exception('Failed to set operating mode. Error code {}.'.format(err_code))
+
+    def getOperatingState(self):
+        state = self.lib.GetOperatingState(self.serial_no_c)
+        return operatingStates_dict_reverse[state]
+
+    def setOperatingState(self, state):
+
+        if self._verbose:
+            self.verboseMessage('Setting operating state...')
+
+        if type(state) == type(' '):
+            if state.lower().capitalize() not in list(operatingStates_dict.keys()):
+                raise ValueError('Invalid operating state. Must be in {}.'.format(operatingStates_dict.keys()))
+            state = operatingStates_dict[state.lower().capitalize()]
+
+        if state.value not in list(operatingStates_dict_reverse.keys()):
+            raise ValueError('Invalid operating state. Must be in {}.'.format(operatingStates_dict.keys()))
+
+        err_code = self.lib.SetOperatingState(self.serial_no_c, state)
+
+        if err_code==0:
+            if self._verbose:
+                self.verboseMessage('Done setting operating state.')
+        else:
+            raise Exception('Failed to set operating state. Error code {}.'.format(err_code))
+
+    # def getSolenoidState(self):
+    #     self.lib.RequestSettings(self.serial_no_c)
+    #     sleep(0.1)
+    #     self.lib.LoadSettings(self.serial_no_c)
+    #     state = self.lib.GetSolenoidState(self.serial_no_c)
+    #     return state
