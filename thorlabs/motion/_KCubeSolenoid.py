@@ -135,3 +135,8 @@ GetOperatingState = bind(lib, "SC_GetOperatingState", [POINTER(c_char)], SC_Oper
 SetOperatingState = bind(lib, "SC_SetOperatingState", [POINTER(c_char), SC_OperatingStates], c_short)
 
 GetSolenoidState = bind(lib, "SC_GetSolenoidState", [POINTER(c_char)], SC_SolenoidStates)
+
+ClearMessageQueue = bind(lib, "SC_ClearMessageQueue", [POINTER(c_char)], None)
+
+LoadSettings = bind(lib, "SC_LoadSettings", [POINTER(c_char)], c_bool)
+RequestSettings = bind(lib, "SC_RequestSettings", [POINTER(c_char)], c_short)
