@@ -130,3 +130,31 @@ Quickest = c_int(0x00)
 Forwards = c_int(0x01)
 Reverse = c_int(0x02)
 MOT_MovementDirections = c_int
+
+# enum KSC_TriggerPortMode
+KSC_TrigDisabled = c_int16(0x00)
+KSC_TrigIn_GPI = c_int16(0x01)
+KSC_TrigOut_GPO = c_int16(0x0A)
+KSC_TriggerPortMode = c_int16
+
+# enum KSC_TriggerPortPolarity
+KSC_TriggerPortPolarity = c_int16
+KSC_TriggerPolarityHigh = c_int16(0x01)
+KSC_TriggerPolarityLow = c_int16(0x02)
+
+# SC_OperatingMode
+SC_OperatingMode = c_byte
+SC_Manual = c_byte(0x01)
+SC_Single = c_byte(0x02)
+SC_Auto = c_byte(0x03)
+SC_Triggered = c_byte(0x04)
+
+# SC_OperatingStates
+SC_OperatingStates = c_byte
+SC_Active = c_byte(0x01)
+SC_Inactive = c_byte(0x02)
+
+# SC_SolenoidStates
+SC_SolenoidStates = c_byte
+SC_SolenoidOpen = c_byte(0x01)
+SC_SolenoidClosed = c_byte(0x02)

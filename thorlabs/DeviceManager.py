@@ -2,7 +2,7 @@ from ctypes import cdll
 from ._tool import bind, null_function
 import xml.etree.ElementTree as ET
 
-lib = cdll.LoadLibrary("Thorlabs.MotionControl.DeviceManager.dll")
+lib = cdll.LoadLibrary(r"C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.DeviceManager.dll")
 
 _filepath = r'C:\Program Files\Thorlabs\Kinesis\ThorlabsDefaultSettings.xml'  # might need to upgrade how I do this
 

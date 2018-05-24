@@ -23,7 +23,7 @@ c_word = c_ushort
 c_dword = c_ulong
 
 from .._tool import bind, null_function
-from .._enumeration import MOT_MotorTypes, MOT_JogModes, MOT_StopModes, MOT_TravelDirection, MOT_HomeLimitSwitchDirection, MOT_LimitSwitchModes, MOT_LimitSwitchSWModes, MOT_DirectionSense, MOT_TravelModes
+from .._enumeration import *
 from .. import DeviceManager as dm
 
 from comtypes import _safearray
@@ -31,15 +31,7 @@ import ctypes
 from ctypes import byref, pointer
 from time import sleep
 
-lib = cdll.LoadLibrary("Thorlabs.MotionControl.KCube.DCServo.dll")
-
-#encoder_counters = {
-#    'MTS25-Z8':     34304,
-#    'MTS50-Z8':     34304,
-#    'Z8':           34304,
-#    'Z6':           24600,
-#    'PRM1-Z8':      1919.64,
-#    'CR1-Z7':       12288}
+lib = cdll.LoadLibrary(r"C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.KCube.DCServo.dll")
 
 class StructureEx(Structure):
 
@@ -163,58 +155,58 @@ class KMOT_TriggerParams(StructureEx):
                 ("CycleCount", c_int32),
                 ("reserved", 6*c_int32)]
 
-TLI_BuildDeviceList = bind(lib, "TLI_BuildDeviceList", None, c_short)
-TLI_GetDeviceListSize = bind(lib, "TLI_GetDeviceListSize", None, c_short)
+BuildDeviceList = bind(lib, "TLI_BuildDeviceList", None, c_short)
+GetDeviceListSize = bind(lib, "TLI_GetDeviceListSize", None, c_short)
 # TLI_GetDeviceList = bind(lib, "TLI_GetDeviceList", [_safearray.tagSAFEARRAY], c_short)
 # TLI_GetDeviceList  <- TODO: Implement SAFEARRAY first. BENCHTOPSTEPPERMOTOR_API short __cdecl TLI_GetDeviceList(SAFEARRAY** stringsReceiver);
 # TLI_GetDeviceListByType  <- TODO: Implement SAFEARRAY first. BENCHTOPSTEPPERMOTOR_API short __cdecl TLI_GetDeviceListByType(SAFEARRAY** stringsReceiver, int typeID);
 # TLI_GetDeviceListByTypes  <- TODO: Implement SAFEARRAY first. BENCHTOPSTEPPERMOTOR_API short __cdecl TLI_GetDeviceListByTypes(SAFEARRAY** stringsReceiver, int * typeIDs, int length);
-TLI_GetDeviceListExt = bind(lib, "TLI_GetDeviceListExt", [POINTER(c_char), c_dword], c_short)
-TLI_GetDeviceListByTypeExt = bind(lib, "TLI_GetDeviceListByTypeExt", [POINTER(c_char), c_dword, c_int], c_short)
-TLI_GetDeviceListByTypesExt = bind(lib, "TLI_GetDeviceListByTypesExt", [POINTER(c_char), c_dword, POINTER(c_int), c_int], c_short)
-TLI_GetDeviceInfo = bind(lib, "TLI_GetDeviceInfo", [POINTER(c_char), POINTER(TLI_DeviceInfo)], c_short)
+GetDeviceListExt = bind(lib, "TLI_GetDeviceListExt", [POINTER(c_char), c_dword], c_short)
+GetDeviceListByTypeExt = bind(lib, "TLI_GetDeviceListByTypeExt", [POINTER(c_char), c_dword, c_int], c_short)
+GetDeviceListByTypesExt = bind(lib, "TLI_GetDeviceListByTypesExt", [POINTER(c_char), c_dword, POINTER(c_int), c_int], c_short)
+GetDeviceInfo = bind(lib, "TLI_GetDeviceInfo", [POINTER(c_char), POINTER(TLI_DeviceInfo)], c_short)
 
 # KDC specific functions
-CC_Open = bind(lib, "CC_Open", [POINTER(c_char)], c_short)
-CC_Close = bind(lib, "CC_Close", [POINTER(c_char)], c_short)
-CC_Identify = bind(lib, "CC_Identify", [POINTER(c_char)], None)
+Open = bind(lib, "CC_Open", [POINTER(c_char)], c_short)
+Close = bind(lib, "CC_Close", [POINTER(c_char)], c_short)
+Identify = bind(lib, "CC_Identify", [POINTER(c_char)], None)
 
-CC_Home = bind(lib, "CC_Home", [POINTER(c_char)], c_short)
-CC_MoveToPosition = bind(lib, "CC_MoveToPosition", [POINTER(c_char), c_int], c_short)
-CC_StopProfiled = bind(lib, "CC_StopProfiled", [POINTER(c_char)], c_short)
-CC_StopImmediate = bind(lib, "CC_StopImmediate", [POINTER(c_char)], c_short)
+Home = bind(lib, "CC_Home", [POINTER(c_char)], c_short)
+MoveToPosition = bind(lib, "CC_MoveToPosition", [POINTER(c_char), c_int], c_short)
+StopProfiled = bind(lib, "CC_StopProfiled", [POINTER(c_char)], c_short)
+StopImmediate = bind(lib, "CC_StopImmediate", [POINTER(c_char)], c_short)
 
-CC_RequestPosition = bind(lib, "CC_RequestPosition", [POINTER(c_char)], c_short)
-CC_GetPosition = bind(lib, "CC_GetPosition", [POINTER(c_char)], c_int)
+RequestPosition = bind(lib, "CC_RequestPosition", [POINTER(c_char)], c_short)
+GetPosition = bind(lib, "CC_GetPosition", [POINTER(c_char)], c_int)
 
-CC_GetVelParams = bind(lib, "CC_GetVelParams", [POINTER(c_char), POINTER(c_int), POINTER(c_int)], c_short)
+GetVelParams = bind(lib, "CC_GetVelParams", [POINTER(c_char), POINTER(c_int), POINTER(c_int)], c_short)
 
-CC_GetRealValueFromDeviceUnit = bind(lib, "CC_GetRealValueFromDeviceUnit", [POINTER(c_char), c_int, POINTER(c_double), c_int], c_short)
-CC_GetDeviceUnitFromRealValue = bind(lib, "CC_GetDeviceUnitFromRealValue", [POINTER(c_char), c_double, POINTER(c_int), c_int], c_short)
+GetRealValueFromDeviceUnit = bind(lib, "CC_GetRealValueFromDeviceUnit", [POINTER(c_char), c_int, POINTER(c_double), c_int], c_short)
+GetDeviceUnitFromRealValue = bind(lib, "CC_GetDeviceUnitFromRealValue", [POINTER(c_char), c_double, POINTER(c_int), c_int], c_short)
 
-CC_GetHardwareInfoBlock = bind(lib, "CC_GetHardwareInfoBlock", [POINTER(c_char), POINTER(TLI_HardwareInformation)], c_short)
+GetHardwareInfoBlock = bind(lib, "CC_GetHardwareInfoBlock", [POINTER(c_char), POINTER(TLI_HardwareInformation)], c_short)
 
-CC_ClearMessageQueue = bind(lib, "CC_ClearMessageQueue", [POINTER(c_char)], None)
+ClearMessageQueue = bind(lib, "CC_ClearMessageQueue", [POINTER(c_char)], None)
 
-CC_GetMotorParamsExt = bind(lib, "CC_GetMotorParamsExt", [POINTER(c_char), POINTER(c_double), POINTER(c_double), POINTER(c_double)], c_short)
-CC_GetMotorVelocityLimits = bind(lib, "CC_GetMotorVelocityLimits", [POINTER(c_char), POINTER(c_double), POINTER(c_double)], c_short)
-CC_GetMotorTravelMode = bind(lib, "CC_GetMotorTravelMode", [POINTER(c_char)], MOT_TravelModes)
-CC_GetMotorTravelLimits = bind(lib, "CC_GetMotorTravelLimits", [POINTER(c_char), POINTER(c_double), POINTER(c_double)], c_short)
+GetMotorParamsExt = bind(lib, "CC_GetMotorParamsExt", [POINTER(c_char), POINTER(c_double), POINTER(c_double), POINTER(c_double)], c_short)
+GetMotorVelocityLimits = bind(lib, "CC_GetMotorVelocityLimits", [POINTER(c_char), POINTER(c_double), POINTER(c_double)], c_short)
+GetMotorTravelMode = bind(lib, "CC_GetMotorTravelMode", [POINTER(c_char)], MOT_TravelModes)
+GetMotorTravelLimits = bind(lib, "CC_GetMotorTravelLimits", [POINTER(c_char), POINTER(c_double), POINTER(c_double)], c_short)
 
-CC_SetMotorParamsExt = bind(lib, "CC_SetMotorParamsExt", [POINTER(c_char), c_double, c_double, c_double], c_short)
-CC_SetMotorTravelLimits = bind(lib, "CC_SetMotorTravelLimits", [POINTER(c_char), c_double, c_double], c_short)
-CC_SetMotorTravelMode = bind(lib, "CC_SetMotorTravelMode", [POINTER(c_char), MOT_TravelModes], c_short)
-CC_SetMotorVelocityLimits = bind(lib, "CC_SetMotorVelocityLimits", [POINTER(c_char), c_double, c_double], c_short)
+SetMotorParamsExt = bind(lib, "CC_SetMotorParamsExt", [POINTER(c_char), c_double, c_double, c_double], c_short)
+SetMotorTravelLimits = bind(lib, "CC_SetMotorTravelLimits", [POINTER(c_char), c_double, c_double], c_short)
+SetMotorTravelMode = bind(lib, "CC_SetMotorTravelMode", [POINTER(c_char), MOT_TravelModes], c_short)
+SetMotorVelocityLimits = bind(lib, "CC_SetMotorVelocityLimits", [POINTER(c_char), c_double, c_double], c_short)
 
-CC_RequestSettings = bind(lib, "CC_RequestSettings", [POINTER(c_char)], c_short)
-CC_ResetStageToDefaults = bind(lib, "CC_ResetStageToDefaults", [POINTER(c_char)], c_short)
-CC_LoadSettings = bind(lib, "CC_LoadSettings", [POINTER(c_char)], c_bool)
-CC_PersistSettings = bind(lib, "CC_PersistSettings", [POINTER(c_char)], c_bool)
+RequestSettings = bind(lib, "CC_RequestSettings", [POINTER(c_char)], c_short)
+ResetStageToDefaults = bind(lib, "CC_ResetStageToDefaults", [POINTER(c_char)], c_short)
+LoadSettings = bind(lib, "CC_LoadSettings", [POINTER(c_char)], c_bool)
+PersistSettings = bind(lib, "CC_PersistSettings", [POINTER(c_char)], c_bool)
 
-CC_CanHome = bind(lib, "CC_CanHome", [POINTER(c_char)], c_bool)
+CanHome = bind(lib, "CC_CanHome", [POINTER(c_char)], c_bool)
 
-CC_GetDCPIDParams = bind(lib, "CC_GetDCPIDParams", [POINTER(c_char), POINTER(MOT_DC_PIDParameters)], c_short)
-CC_SetDCPIDParams = bind(lib, "CC_SetDCPIDParams", [POINTER(c_char), POINTER(MOT_DC_PIDParameters)], c_short)
+GetDCPIDParams = bind(lib, "CC_GetDCPIDParams", [POINTER(c_char), POINTER(MOT_DC_PIDParameters)], c_short)
+SetDCPIDParams = bind(lib, "CC_SetDCPIDParams", [POINTER(c_char), POINTER(MOT_DC_PIDParameters)], c_short)
 
-CC_GetHomingParamsBlock = bind(lib, "CC_GetHomingParamsBlock", [POINTER(c_char), POINTER(MOT_HomingParameters)], c_short)
-CC_SetHomingParamsBlock = bind(lib, "CC_SetHomingParamsBlock", [POINTER(c_char), POINTER(MOT_HomingParameters)], c_short)
+GetHomingParamsBlock = bind(lib, "CC_GetHomingParamsBlock", [POINTER(c_char), POINTER(MOT_HomingParameters)], c_short)
+SetHomingParamsBlock = bind(lib, "CC_SetHomingParamsBlock", [POINTER(c_char), POINTER(MOT_HomingParameters)], c_short)
