@@ -16,3 +16,5 @@ sleep(10)
 
 pos = motor.getPosition()
 print('Position: {}'.format(pos))
+
+motor.close()
