@@ -29,3 +29,5 @@ ViPSession = POINTER(c_long)
 ViPUInt32 = POINTER(c_uint32)
 ViUInt32 = c_uint32
 ViChar = c_char
+ViReal64 = c_double
+ViInt16 = c_int16
