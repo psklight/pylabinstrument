@@ -25,13 +25,12 @@ from ctypes import (
 c_word = c_ushort
 c_dword = c_ulong
 
-from .. import _enumeration as enum
+from .tools import _enumeration as enum
 from time import sleep
-from . import _KCubeSolenoid as K
-from . import _motor
+from .tools import _KCubeSolenoid as K
+from .tools import _motor
 
 operatingMode_dict = {'Manual': enum.SC_Manual, 'Single': enum.SC_Single, 'Auto': enum.SC_Auto, 'Triggered': enum.SC_Triggered}
-print(operatingMode_dict.items())
 #operatingMode_dict_reverse = {val: key for key, val in operatingMode_dict.items()}
 operatingMode_dict_reverse = dict([ [val_c.value, key] for key, val_c in operatingMode_dict.items()])
 

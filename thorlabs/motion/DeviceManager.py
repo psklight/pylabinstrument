@@ -1,5 +1,5 @@
 from ctypes import cdll
-from ._tool import bind, null_function
+from .. .ctools.tools import bind, null_function
 import xml.etree.ElementTree as ET
 
 lib = cdll.LoadLibrary(r"C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.DeviceManager.dll")

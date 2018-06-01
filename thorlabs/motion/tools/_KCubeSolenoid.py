@@ -22,8 +22,8 @@ from ctypes import (
 c_word = c_ushort
 c_dword = c_ulong
 
-from .._tool import bind, null_function
-from .._enumeration import *
+from .. ..ctools.tools import bind, null_function
+from ._enumeration import *
 from .. import DeviceManager as dm
 
 from comtypes import _safearray

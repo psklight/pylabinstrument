@@ -26,9 +26,9 @@ from ctypes import (
 c_word = c_ushort
 c_dword = c_ulong
 
-from .. import _enumeration as enum
+from .tools import _enumeration as enum
 from time import sleep
-from . import _KCubeDCServo as K
+from .tools import _KCubeDCServo as K
 
 
 class Motor(object):
