@@ -23,7 +23,8 @@ from ctypes import (
 c_word = c_ushort
 c_dword = c_ulong
 
-from ..thorlabs._tool import bind, null_function
+from ...ctools.tools import bind, null_function
+from . import _enum as enum
 
 
 class StructureEx(Structure):
@@ -46,24 +47,27 @@ class StructureEx(Structure):
             if ctype in [c_float, c_double]:
                 setattr(self, f, ctype(float(d[f])))
 
+    def __str__(self):
+        return print(self.getdict())
+
 
 class UEYE_CAMERA_INFO(StructureEx):
-	_fields_ = [("dwCameraID", c_dword),
-				("dwDeviceID", c_dword),
-				("dwSensorID", c_dword),
-				("dwInUse", c_dword),
+	_fields_ = [("CameraID", c_dword),
+				("DeviceID", c_dword),
+				("SensorID", c_dword),
+				("InUse", c_dword),
 				("SerNo", 16*c_char),
 				("Model", 16*c_char),
-				("dwStatus", c_dword),
-				("dwReserved", 2*c_dword),
+				("Status", c_dword),
+				("Reserved", 2*c_dword),
 				("FullModelName", 32*c_char),
-				("dwReserved2", 5*c_dword)]
+				("Reserved2", 5*c_dword)]
 
 class UEYE_CAMERA_LIST(StructureEx):
-	_fields_ = [("dwCount", c_ulong),
-				("uci", UEYE_CAMERA_INFO*10)]
-
-
+    # making it 'incomplete' ctypes type
+    pass
+	# _fields_ = [("count", c_ulong),
+	# 			("cameras", ARRAY(UEYE_CAMERA_INFO,1)) ]
 
 
 lib_api_path = r"C:\Windows\System32\uEye_api_64.dll"
@@ -72,4 +76,5 @@ lib_api = cdll.LoadLibrary(lib_api_path)
 GetNumberOfCameras = bind(lib_api, "is_GetNumberOfCameras", [POINTER(c_int)], c_int)
 GetCameraList = bind(lib_api, "is_GetCameraList", [POINTER(UEYE_CAMERA_LIST)], c_int)
 
-InitCamera = bind(lib_api, "is_InitCamera", [POINTER(HIDS), HWND], c_int)
+InitCamera = bind(lib_api, "is_InitCamera", [POINTER(enum.HIDS), POINTER(enum.HWND)], c_int)
+ExitCamera = bind(lib_api, "is_ExitCamera", [enum.HIDS], c_int)
