@@ -17,7 +17,9 @@ from ctypes import (
     c_ushort,
     c_ulong,
     c_char_p,
-    ARRAY
+    c_wchar_p,
+    ARRAY,
+    c_void_p
 )
 
 c_word = c_ushort
@@ -64,10 +66,20 @@ class UEYE_CAMERA_INFO(StructureEx):
 				("Reserved2", 5*c_dword)]
 
 class UEYE_CAMERA_LIST(StructureEx):
-    # making it 'incomplete' ctypes type
+    # Making it 'incomplete' ctypes type. It didn't work well because once the detailed is declared, it is fixed. Kernel reboot is needed to alter it. This is inconvenient.
+    # pass
+
+    # for now, assume that the number of cameras would be only 10 max.
+	_fields_ = [("count", c_ulong),
+				("cameras", ARRAY(UEYE_CAMERA_INFO,10)) ]
+
+class UEYE_CAMERA_LIST_Ex(StructureEx):
+    # Making it 'incomplete' ctypes type. It didn't work well because once the detailed is declared, it is fixed. Kernel reboot is needed to alter it. This is inconvenient.
     pass
-	# _fields_ = [("count", c_ulong),
-	# 			("cameras", ARRAY(UEYE_CAMERA_INFO,1)) ]
+
+    # for now, assume that the number of cameras would be only 100 max.
+    # _fields_ = [("count", c_ulong),
+    #             ("cameras", ARRAY(UEYE_CAMERA_INFO,100)) ]
 
 
 lib_api_path = r"C:\Windows\System32\uEye_api_64.dll"
@@ -75,6 +87,23 @@ lib_api = cdll.LoadLibrary(lib_api_path)
 
 GetNumberOfCameras = bind(lib_api, "is_GetNumberOfCameras", [POINTER(c_int)], c_int)
 GetCameraList = bind(lib_api, "is_GetCameraList", [POINTER(UEYE_CAMERA_LIST)], c_int)
+# GetCameraListEx = bind(lib_api, "is_GetCameraList", [POINTER(UEYE_CAMERA_LIST_Ex)], c_int)
 
 InitCamera = bind(lib_api, "is_InitCamera", [POINTER(enum.HIDS), POINTER(enum.HWND)], c_int)
 ExitCamera = bind(lib_api, "is_ExitCamera", [enum.HIDS], c_int)
+
+SetDisplayMode = bind(lib_api, "is_SetDisplayMode", [enum.HIDS, c_int], c_int)
+SetColorMode = bind(lib_api, "is_SetColorMode", [enum.HIDS, c_int], c_int)
+
+GetError = bind(lib_api, "is_GetError", [enum.HIDS, POINTER(c_int), c_char_p], c_int)
+
+AllocImageMem = bind(lib_api,"is_AllocImageMem", [enum.HIDS, c_int, c_int, c_int, POINTER(c_char_p), POINTER(c_int)], c_int)
+SetImageMem = bind(lib_api, "is_SetImageMem", [enum.HIDS, c_char_p, c_int], c_int)
+CopyImageMem = bind(lib_api, "is_CopyImageMem", [enum.HIDS, c_char_p, c_int, c_char_p], c_int)
+FreeImageMem = bind(lib_api, "is_FreeImageMem", [enum.HIDS, c_char_p, c_int], c_int)
+
+CaptureSingle = bind(lib_api, "is_FreezeVideo", [enum.HIDS, c_int], c_int)
+
+SetExternalTrigger = bind(lib_api, "is_SetExternalTrigger", [enum.HIDS, c_int], c_int)
+
+BlackLevel = bind(lib_api, "is_Blacklevel", [enum.HIDS, c_uint, c_void_p, c_uint], c_int)
