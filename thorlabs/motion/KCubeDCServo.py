@@ -1,4 +1,3 @@
-
 import ctypes
 from ctypes import (
     Structure,
@@ -29,9 +28,10 @@ c_dword = c_ulong
 from .tools import _enumeration as enum
 from time import sleep
 from .tools import _KCubeDCServo as K
+from .tools import _motor
 
 
-class Motor(object):
+class Motor(_motor.Motor):
 
     def __init__(self, serial_no, channel=1):
 
@@ -42,6 +42,17 @@ class Motor(object):
 
         self.serial_no_c = c_char_p(bytes(str(serial_no), "utf-8"))
         self.channel_c = c_short(channel)
+
+        self._library = K
+    
+
+    @property
+    def library(self):
+        return self._library
+    
+    @library.setter
+    def library(self, lib):
+        self._library = lib
 
     @property
     def serial_no(self):
@@ -91,237 +102,271 @@ class Motor(object):
 
     #################################################
     def open(self):
-        if self._verbose:
-            self.verboseMessage('Opening...')
+        self.verboseMessage('Opening...')
 
-        err_code = K.Open(self.serial_no_c, self.channel_c)
+        err_code = self.library.Open(self.serial_no_c, self.channel_c)
         if err_code==0:
             self._lockchange = True
-            K.ClearMessageQueue(self.serial_no_c)
+            self.isInSession = True
+            self.library.ClearMessageQueue(self.serial_no_c)
             self.loadSettings()  # for, for example, convert real and device unit
-            if self._verbose:
-                self.verboseMessage('Opening done.')
+            self.verboseMessage('Opening done.')
         else:
             raise Exception('Failed to open and establish connection with device. Error code {}.'.format(err_code))
 
     def close(self):
-        if self._verbose:
-            self.verboseMessage('Closing...')
-        K.Close(self.serial_no_c)
+        self.verboseMessage('Closing...')
+        self.library.Close(self.serial_no_c)
         self._lockchange = False
-        if self._verbose:
-            self.verboseMessage('Closing done.')
+        self.isInSession = False
+        self.verboseMessage('Closing done.')
+
 
     def home(self):
-        canhome = K.CanHome(self.serial_no_c)
-        if canhome:
-            if self._verbose:
+        if self.isInSession:
+            canhome = self.library.CanHome(self.serial_no_c)
+            if canhome:
                 self.verboseMessage('Homing')
-            err_code = K.Home(self._serial_no_c)
+                err_code = self.library.Home(self._serial_no_c)
+                if err_code==0:
+                    pass
+                else:
+                    raise Exception('Error when homing. Error code {}.'.format(err_code))
+            else:
+                print('Device cannot perform home.')
+        else:
+            raise self.notInSessionMsg()
+
+    def moveToPosition(self, realpos):
+        if self.isInSession:
+            self.verboseMessage('Moving to position')
+            err_code = self.library.MoveToPosition(self.serial_no_c, self.getDeviceUnitFromRealValue(realpos))
             if err_code==0:
                 pass
             else:
-                raise Exception('Error when homing. Error code {}.'.format(err_code))
+                raise Exception('Error trying to move. Error code {}'.format(err_code))
         else:
-            print('Device cannot perform home.')
+            raise self.notInSessionMsg()
 
-    def moveToPosition(self, realpos):
-        if self._verbose:
-            self.verboseMessage('Moving to position')
-        err_code = K.MoveToPosition(self.serial_no_c, self.getDeviceUnitFromRealValue(realpos))
-        if err_code==0:
-            pass
-        else:
-            raise Exception('Error trying to move. Error code {}'.format(err_code))
 
     def getPosition(self):
-        err_code = K.RequestPosition(self.serial_no_c)
-        if err_code is not 0:
-            raise Exception('Error in requesting position. Error code {}'.format(err_code))
-        sleep(0.1)
-        devicepos = K.GetPosition(self.serial_no_c)
-        return self.getRealValueFromDeviceUnit(devicepos, unitType=0)
+        if self.isInSession:
+            err_code = self.library.RequestPosition(self.serial_no_c)
+            if err_code is not 0:
+                raise Exception('Error in requesting position. Error code {}'.format(err_code))
+            sleep(0.1)
+            devicepos = self.library.GetPosition(self.serial_no_c)
+            return self.getRealValueFromDeviceUnit(devicepos, unitType=0)
+        else:
+            raise self.notInSessionMsg()
+            
 
     def stop(self):
-        err_code = K.StopProfiled(self.serial_no_c)
-        if err_code!=0:
-            raise Exception('Failed to stop. Error code {}.'.format(err_code))
+        if self.isInSession:
+            err_code = self.library.StopProfiled(self.serial_no_c)
+            if err_code!=0:
+                raise Exception('Failed to stop. Error code {}.'.format(err_code))
+        else:
+            raise self.notInSessionMsg()
+            
 
     def stopImmediate(self):
-        err_code = K.StopImmediate(self.serial_no_c)
-        if err_code!=0:
-            raise Exception('Failed to stop. Error code {}'.format(err_code))
+        if self.isInSession:
+            err_code = self.library.StopImmediate(self.serial_no_c)
+            if err_code!=0:
+                raise Exception('Failed to stop. Error code {}'.format(err_code))
+        else:
+            raise self.notInSessionMsg()
+            
 
     #####################################
-    def identify(self):
-        K.Identify(self.serial_no_c)
-
-    def blink(self):
-        self.identify()
-
-    def getDeviceInfo(self):
-        K.BuildDeviceList()
-        di = K.DeviceInfo()
-        err_code = K.GetDeviceInfo(self.serial_no_c, byref(di))
-        if err_code==0:
-            raise Exception('Failed to get device info from K.GetDeviceInfo.')
-        else:
-            return di
-
-    def getHardwareInfo(self):
-        K.BuildDeviceList()
-        hi = K.HardwareInformation()
-        err_code = K.GetHardwareInfoBlock(self.serial_no_c, byref(hi))
-        if err_code==0:
-            return hi
-        else:
-            raise Exception('Failed to get hardware info from K.GetHardwareInfoBlock. Error code {}'.format(err_code))
 
     def getVelParams(self):
-        acc = c_int(0)
-        maxvel = c_int(0)
-        err_code = K.GetVelParams(self.serial_no_c, byref(acc), byref(maxvel))
-        if err_code==0:
-            return {'acceleration': acc.value, 'maxVelocity': maxvel.value}
+        if self.isInSession:
+            acc = c_int(0)
+            maxvel = c_int(0)
+            err_code = self.library.GetVelParams(self.serial_no_c, byref(acc), byref(maxvel))
+            if err_code==0:
+                return {'acceleration': acc.value, 'maxVelocity': maxvel.value}
+            else:
+                raise Exception('Error when getting velocity parameters. Error code {}'.format(err_code))
         else:
-            raise Exception('Error when getting velocity parameters. Error code {}'.format(err_code))
+            raise self.notInSessionMsg()
+            
 
     def getMotorParams(self):
-        params = dict()
-        stepperrev = c_double(0.0)
-        gearboxratio = c_double(0.0)
-        pitch = c_double(0.0)
-        err_code = K.GetMotorParamsExt(self.serial_no_c, byref(stepperrev), byref(gearboxratio), byref(pitch))
-        if err_code==0:
-            params['stepPerRev'] = stepperrev.value
-            params['gearboxRatio'] = gearboxratio.value
-            params['pitch'] = pitch.value
-            return params
+        if self.isInSession:
+            params = dict()
+            stepperrev = c_double(0.0)
+            gearboxratio = c_double(0.0)
+            pitch = c_double(0.0)
+            err_code = self.library.GetMotorParamsExt(self.serial_no_c, byref(stepperrev), byref(gearboxratio), byref(pitch))
+            if err_code==0:
+                params['stepPerRev'] = stepperrev.value
+                params['gearboxRatio'] = gearboxratio.value
+                params['pitch'] = pitch.value
+                return params
+            else:
+                raise Exception('Failed to get motor parameter using self.library.GetMotorParamsExt. Error code {}'.format(err_code))
         else:
-            raise Exception('Failed to get motor parameter using K.GetMotorParamsExt. Error code {}'.format(err_code))
+            raise self.notInSessionMsg()
+        
 
     def setMotorParams(self, params):
-        stepperrev = c_double(params['stepPerRev'])
-        gearboxratio = c_double(params['gearboxRatio'])
-        pitch = c_double(params['pitch'])
-        err_code = K.SetMotorParamsExt(self.serial_no_c, stepperrev, gearboxratio, pitch)
-        if err_code!=0:
-            raise Exception('Failed to set motor parameters. Error code {}'.format(err_code))
+        if self.isInSession:
+            stepperrev = c_double(params['stepPerRev'])
+            gearboxratio = c_double(params['gearboxRatio'])
+            pitch = c_double(params['pitch'])
+            err_code = self.library.SetMotorParamsExt(self.serial_no_c, stepperrev, gearboxratio, pitch)
+            if err_code!=0:
+                raise Exception('Failed to set motor parameters. Error code {}'.format(err_code))
+        else:
+            raise self.notInSessionMsg()
+            
 
     def getMotorTravelMode(self):
-        travelmode = K.GetMotorTravelMode(self.serial_no_c)
-        return travelmode
+        if self.isInSession:
+            travelmode = self.library.GetMotorTravelMode(self.serial_no_c)
+            return travelmode
+        else:
+            raise self.notInSessionMsg()
+            
 
     def setMotorTravelMode(self, mode):
         assert mode in [0,1,2], "mode must be either 0 (undefined), 1 (linear), or 2 (rotational)"
-        err_code = K.SetMotorTravelMode(c_int(mode))
+        if self.isInSession:
+            err_code = self.library.SetMotorTravelMode(c_int(mode))
+        else:
+            raise self.notInSessionMsg()
+        
 
     def getMotorTravelLimits(self):
-        minPosition = c_double(0.0)
-        maxPosition = c_double(0.0)
-        err_code = K.GetMotorTravelLimits(self.serial_no_c, byref(minPosition), byref(maxPosition))
-        if err_code==0:
-            return {'minPosition': minPosition, 'maxPosition': maxPosition}
+        if self.isInSession:
+            minPosition = c_double(0.0)
+            maxPosition = c_double(0.0)
+            err_code = self.library.GetMotorTravelLimits(self.serial_no_c, byref(minPosition), byref(maxPosition))
+            if err_code==0:
+                return {'minPosition': minPosition, 'maxPosition': maxPosition}
+            else:
+                raise Exception('Failed to get motor travel limits. Error code {}.'.format(err_code))
         else:
-            raise Exception('Failed to get motor travel limits. Error code {}.'.format(err_code))
+            raise self.notInSessionMsg()
+            
 
     def setMotorTravelLimits(self, params):
-        minpos = c_double(float(params['minPosition']))
-        maxpos = c_double(float(params['maxPosition']))
-        err_code = K.SetMotorTravelLimits(self.serial_no_c, minpos, maxpos)
-        if err_code!=0:
-            raise Exception('Failed to set motor travel limits. Error code {}'.format(err_code))
+        if self.isInSession:
+            minpos = c_double(float(params['minPosition']))
+            maxpos = c_double(float(params['maxPosition']))
+            err_code = self.library.SetMotorTravelLimits(self.serial_no_c, minpos, maxpos)
+            if err_code!=0:
+                raise Exception('Failed to set motor travel limits. Error code {}'.format(err_code))
+        else:
+            raise self.notInSessionMsg()
+        
 
     def getMotorVelocityLimits(self):
-        maxVelocity = c_double(0.0)
-        maxAcceleration = c_double(0.0)
-        err_code = K.GetMotorVelocityLimits(self.serial_no_c, byref(maxVelocity), byref(maxAcceleration))
-        if err_code==0:
-            return {'maxVelocity': maxVelocity.value, 'maxAcceleration': maxAcceleration.value}
+        if self.isInSession:
+            maxVelocity = c_double(0.0)
+            maxAcceleration = c_double(0.0)
+            err_code = self.library.GetMotorVelocityLimits(self.serial_no_c, byref(maxVelocity), byref(maxAcceleration))
+            if err_code==0:
+                return {'maxVelocity': maxVelocity.value, 'maxAcceleration': maxAcceleration.value}
+            else:
+                raise Exception('Failed to get motor velocity limit. Error code {}.'.format(err_code))
         else:
-            raise Exception('Failed to get motor velocity limit. Error code {}.'.format(err_code))
+            raise self.notInSessionMsg()
+            
 
     def setMotorVelocityLimits(self, params):
-        maxvel = c_double(float(params['maxVelocity']))
-        maxacc = c_double(float(params['maxAcceleration']))
-        err_code = K.SetMotorVelocityLimits(self.serial_no_c, maxvel, maxacc)
-        if err_code!=0:
-            raise Exception('Failed to set motor velocity limits. Error code {}'.format(err_code))
+        if self.isInSession:
+            maxvel = c_double(float(params['maxVelocity']))
+            maxacc = c_double(float(params['maxAcceleration']))
+            err_code = self.library.SetMotorVelocityLimits(self.serial_no_c, maxvel, maxacc)
+            if err_code!=0:
+                raise Exception('Failed to set motor velocity limits. Error code {}'.format(err_code))
+        else:
+            raise self.notInSessionMsg()
 
-    def resetStageToDefaults(self):
-        success = K.ResetStageToDefaults(self.serial_no_c)
-        if success is False:
-            raise Exception('Failed to reset stage to defaults.')
-
-    def loadSettings(self):
-        success = K.LoadSettings(self.serial_no_c)
-        if success is False:
-            raise Exception('Failed to load settings.')
-
-    def persistSettings(self):
-        success = K.PersistSettings(self.serial_no_c)
-        if success is False:
-            raise Exception('Failed to persist settings.')
-
-    def requestSettings(self):
-        err_code = K.RequestSettings(self.serial_no_c)
-        if err_code!=0:
-            raise Exception('Failed to request settings. Error code {}'.format(err_code))
 
     def getDCPIDParams(self):
-        params_c = K.MOT_DC_PIDParameters()
-        err_code = K.GetDCPIDParams(self.serial_no_c, byref(params_c))
-        if err_code==0:
-            return params_c.getdict()
+        if self.isInSession:
+            params_c = self.library.MOT_DC_PIDParameters()
+            err_code = self.library.GetDCPIDParams(self.serial_no_c, byref(params_c))
+            if err_code==0:
+                return params_c.getdict()
+            else:
+                raise Exception('Failed to get DC PID params. Error code {}.'.format(err_code))
         else:
-            raise Exception('Failed to get DC PID params. Error code {}.'.format(err_code))
+            raise self.notInSessionMsg()
+        
 
     def setDCPIDParams(self, params):
-        param_c = K.MOT_DC_PIDParameters()
-        param_c.loaddict(params)
-        if self._verbose:
+        if self.isInSession:
+            param_c = self.library.MOT_DC_PIDParameters()
+            param_c.loaddict(params)
             self.verboseMessage("Setting DC PID params...")
-        err_code = K.SetDCPIDParams(self.serial_no_c, byref(param_c))
-        if err_code==0:
-            if self._verbose:
+            err_code = self.library.SetDCPIDParams(self.serial_no_c, byref(param_c))
+            if err_code==0:
                 self.verboseMessage("Done setting DC PID params.")
+            else:
+                raise Exception('Failed to set DC PID params. Error code {}.'.format(err_code))
         else:
-            raise Exception('Failed to set DC PID params. Error code {}.'.format(err_code))
+            raise self.notInSessionMsg()
+        
 
     def getHomingParams(self):
-        param_c = K.MOT_HomingParameters()
-        err_code = K.GetHomingParamsBlock(self.serial_no_c, byref(param_c))
-        if err_code==0:
-            return param_c.getdict()
+        if self.isInSession:
+            param_c = self.library.MOT_HomingParameters()
+            err_code = self.library.GetHomingParamsBlock(self.serial_no_c, byref(param_c))
+            if err_code==0:
+                return param_c.getdict()
+            else:
+                raise Exception('Failed to get homing parameters. Error code {}.'.format(err_code))
         else:
-            raise Exception('Failed to get homing parameters. Error code {}.'.format(err_code))
+            raise self.notInSessionMsg()
+        
 
     def setHomingParams(self, params):
-        param_c = K.MOT_HomingParameters()
-        param_c.loaddict(params)
-        if self._verbose:
+        if self.isInSession:
+            param_c = self.library.MOT_HomingParameters()
+            param_c.loaddict(params)
             self.verboseMessage("Setting homing params...")
-        err_code = K.SetHomingParamsBlock(self.serial_no_c, byref(param_c))
-        if err_code==0:
-            if self._verbose:
+            err_code = self.library.SetHomingParamsBlock(self.serial_no_c, byref(param_c))
+            if err_code==0:
                 self.verboseMessage("Done setting homing params.")
+            else:
+                raise Exception('Failed to set homing parameters. Error code {}.'.format(err_code))
         else:
-            raise Exception('Failed to set homing parameters. Error code {}.'.format(err_code))
+            raise self.notInSessionMsg()
+            
 
     #####################################
     # UTILITY FUNCTIONS
-    def verboseMessage(self, message):
-        print('Device {}, Ch. {} -- {}...'.format(self.serial_no, self.channel, message))
 
-    def getRealValueFromDeviceUnit(self, deviceunit, unitType=0):
-        realval = c_double(0.0)
-        err_code = K.GetRealValueFromDeviceUnit(self.serial_no_c, deviceunit, byref(realval), c_int(unitType))
+
+def discover():
+    '''
+    Return a list of serial number of KDC101 devices connected to the computer.
+    '''
+    err_code = K.BuildDeviceList()
+    if err_code==0:
+        n = K.GetDeviceListSize()
+        size = 512
+        sbuffer = ctypes.create_string_buffer(b"",size)
+        err_code = K.GetDeviceListByTypeExt(sbuffer, c_dword(size), c_int(27))
         if err_code==0:
-            return realval.value
+            pbuffer = sbuffer.value
+            serialList = pbuffer.decode('UTF-8').strip(',').split(',')
+            return serialList
         else:
-            raise Exception('Failed to get real value from device unit.')
+            raise Exception('Failed to get device list by type. Error code: {}.'.format(err_code))
+    else:
+        raise Exception('Failed to build device list. Error code: {}.'.format(err_code))
 
-    def getDeviceUnitFromRealValue(self, realval, unitType=0):
-        deviceunit = c_int(0)
-        err_code = K.GetDeviceUnitFromRealValue(self.serial_no_c, c_double(realval), byref(deviceunit), c_int(unitType))
-        return deviceunit.value
+def identify(serial_no):
+    motor = Motor(serial_no)
+    motor.verbose = False
+    motor.open()
+    # K.Identify(c_char_p(bytes(str(serialNo), "utf-8")))
+    motor.identify()
+    motor.close()

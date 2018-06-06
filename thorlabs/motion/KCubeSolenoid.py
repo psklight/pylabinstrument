@@ -50,7 +50,15 @@ class Motor(_motor.Motor):
 
         self.serial_no_c = c_char_p(bytes(str(serial_no), "utf-8"))
 
-        self.lib = K
+        self._library = K
+
+    @property
+    def library(self):
+        return self._library
+    
+    @library.setter
+    def library(self, lib):
+        self._library = lib
 
     @property
     def serial_no(self):
@@ -81,7 +89,7 @@ class Motor(_motor.Motor):
 
     ####################################################
     def getOperatingMode(self):
-        mode = self.lib.GetOperatingMode(self.serial_no_c)
+        mode = self.library.GetOperatingMode(self.serial_no_c)
         return operatingMode_dict_reverse[mode]
 
     def setOperatingMode(self, mode):
@@ -97,7 +105,7 @@ class Motor(_motor.Motor):
         if mode.value not in list(operatingMode_dict_reverse.keys()):
             raise ValueError('Invalid mode. Mode must be in {}.'.format(operatingMode_dict.keys()))
 
-        err_code = self.lib.SetOperatingMode(self.serial_no_c, mode)
+        err_code = self.library.SetOperatingMode(self.serial_no_c, mode)
 
         if err_code==0:
             if self._verbose:
@@ -106,7 +114,7 @@ class Motor(_motor.Motor):
             raise Exception('Failed to set operating mode. Error code {}.'.format(err_code))
 
     def getOperatingState(self):
-        state = self.lib.GetOperatingState(self.serial_no_c)
+        state = self.library.GetOperatingState(self.serial_no_c)
         return operatingStates_dict_reverse[state]
 
     def setOperatingState(self, state):
@@ -122,7 +130,7 @@ class Motor(_motor.Motor):
         if state.value not in list(operatingStates_dict_reverse.keys()):
             raise ValueError('Invalid operating state. Must be in {}.'.format(operatingStates_dict.keys()))
 
-        err_code = self.lib.SetOperatingState(self.serial_no_c, state)
+        err_code = self.library.SetOperatingState(self.serial_no_c, state)
 
         if err_code==0:
             if self._verbose:
@@ -131,8 +139,8 @@ class Motor(_motor.Motor):
             raise Exception('Failed to set operating state. Error code {}.'.format(err_code))
 
     # def getSolenoidState(self):
-    #     self.lib.RequestSettings(self.serial_no_c)
+    #     self.library.RequestSettings(self.serial_no_c)
     #     sleep(0.1)
-    #     self.lib.LoadSettings(self.serial_no_c)
-    #     state = self.lib.GetSolenoidState(self.serial_no_c)
+    #     self.library.LoadSettings(self.serial_no_c)
+    #     state = self.library.GetSolenoidState(self.serial_no_c)
     #     return state
