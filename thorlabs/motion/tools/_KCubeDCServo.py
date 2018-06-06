@@ -53,6 +53,9 @@ class StructureEx(Structure):
             if ctype in [c_float, c_double]:
                 setattr(self, f, ctype(float(d[f])))
 
+    def __str__(self):
+        return str(self.getdict())
+
 # Define data structures
 class TLI_DeviceInfo(StructureEx):
     _fields_ = [("typeID", c_dword),
@@ -67,19 +70,19 @@ class TLI_DeviceInfo(StructureEx):
                 ("isRack", c_bool),
                 ("maxChannels", c_short)]
 
-    def __str__(self):
-        d = dict()
-        d['typeID'] = self.typeID
-        d['description'] = self.description
-        d['serialNo'] = self.serialNo
-        d['PID'] = self.PID
-        d['isKnownType'] = self.isKnownType
-        d['motorType'] = self.motorType
-        d['isPiezoDevice'] = self.isPiezoDevice
-        d['isCustomType'] = self.isCustomType
-        d['isRack'] = self.isRack
-        d['maxChannels'] = self.maxChannels
-        return str(d)
+    # def __str__(self):
+    #     d = dict()
+    #     d['typeID'] = self.typeID
+    #     d['description'] = self.description
+    #     d['serialNo'] = self.serialNo
+    #     d['PID'] = self.PID
+    #     d['isKnownType'] = self.isKnownType
+    #     d['motorType'] = self.motorType
+    #     d['isPiezoDevice'] = self.isPiezoDevice
+    #     d['isCustomType'] = self.isCustomType
+    #     d['isRack'] = self.isRack
+    #     d['maxChannels'] = self.maxChannels
+    #     return str(d)
 
 
 class TLI_HardwareInformation(StructureEx):
