@@ -29,11 +29,12 @@ from .tools import _enumeration as enum
 from time import sleep
 from .tools import _KCubeDCServo as K
 from .tools import _motor
+from .tools import _supported_devices as supDv
 
 
 class Motor(_motor.Motor):
 
-    def __init__(self, serial_no, channel=1):
+    def __init__(self, serial_no, channel=1, name=""):
 
         self._lockchange = False
         self._serial_no = serial_no
@@ -44,25 +45,8 @@ class Motor(_motor.Motor):
         self.channel_c = c_short(channel)
 
         self._library = K
+        self._name = name
     
-
-    @property
-    def library(self):
-        return self._library
-    
-    @library.setter
-    def library(self, lib):
-        self._library = lib
-
-    @property
-    def serial_no(self):
-        return self._serial_no
-
-    @serial_no.setter
-    def serial_no(self, value):
-        assert self._lockchange is False, "The motor instance is open. Close the motor first befor changing serial number or channel."
-        self._serial_no = value
-        self.serial_no_c = c_char_p(bytes(str(serial_no), "utf-8"))
 
     @property
     def channel(self):
@@ -74,23 +58,6 @@ class Motor(_motor.Motor):
         self._channel = value
         self.channel_c = c_short(value)
 
-    @property
-    def verbose(self):
-        return self._verbose
-
-    @verbose.setter
-    def verbose(self, value):
-        assert type(value) is type(True), "Verbose property can only be True of False."
-        self._verbose = value
-    
-    def get_serial_no_c(self):
-        return self._serial_no_c
-
-    def set_serial_no_c(self, value):
-        self._serial_no_c = value
-
-    serial_no_c = property(get_serial_no_c, set_serial_no_c)
-
     def get_channel_c(self):
         return self._channel_c
 
@@ -101,26 +68,6 @@ class Motor(_motor.Motor):
 
 
     #################################################
-    def open(self):
-        self.verboseMessage('Opening...')
-
-        err_code = self.library.Open(self.serial_no_c, self.channel_c)
-        if err_code==0:
-            self._lockchange = True
-            self.isInSession = True
-            self.library.ClearMessageQueue(self.serial_no_c)
-            self.loadSettings()  # for, for example, convert real and device unit
-            self.verboseMessage('Opening done.')
-        else:
-            raise Exception('Failed to open and establish connection with device. Error code {}.'.format(err_code))
-
-    def close(self):
-        self.verboseMessage('Closing...')
-        self.library.Close(self.serial_no_c)
-        self._lockchange = False
-        self.isInSession = False
-        self.verboseMessage('Closing done.')
-
 
     def home(self):
         if self.isInSession:
@@ -136,6 +83,7 @@ class Motor(_motor.Motor):
                 print('Device cannot perform home.')
         else:
             raise self.notInSessionMsg()
+
 
     def moveToPosition(self, realpos):
         if self.isInSession:
@@ -342,18 +290,23 @@ class Motor(_motor.Motor):
 
     #####################################
     # UTILITY FUNCTIONS
+def supportedDevices():
+    return list(supDv.name_to_num.keys())
 
-
-def discover():
+def discover(typename='kdc'):
     '''
     Return a list of serial number of KDC101 devices connected to the computer.
+    Inputs:
+    typename -- a name of the device type to discover. For supported device, call .supportedDevices(). The default is 'kdc' because of this class is for.
     '''
+    assert typename.lower() in supportedDevices(), 'typename must be a member of {}'.format(supportedDevices())
+
     err_code = K.BuildDeviceList()
     if err_code==0:
         n = K.GetDeviceListSize()
         size = 512
         sbuffer = ctypes.create_string_buffer(b"",size)
-        err_code = K.GetDeviceListByTypeExt(sbuffer, c_dword(size), c_int(27))
+        err_code = K.GetDeviceListByTypeExt(sbuffer, c_dword(size), c_int(supDv.name_to_num[typename.lower()]))
         if err_code==0:
             pbuffer = sbuffer.value
             serialList = pbuffer.decode('UTF-8').strip(',').split(',')
@@ -367,6 +320,5 @@ def identify(serial_no):
     motor = Motor(serial_no)
     motor.verbose = False
     motor.open()
-    # K.Identify(c_char_p(bytes(str(serialNo), "utf-8")))
     motor.identify()
     motor.close()

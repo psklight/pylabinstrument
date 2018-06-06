@@ -1,4 +1,25 @@
-
+from ctypes import (
+    Structure,
+    cdll,
+    c_bool,
+    c_short,
+    c_int,
+    c_uint,
+    c_int16,
+    c_int32,
+    c_char,
+    c_byte,
+    c_long,
+    c_float,
+    c_double,
+    POINTER,
+    CFUNCTYPE,
+    c_ushort,
+    c_ulong,
+    c_char_p,
+    byref,
+    pointer
+)
 
 class Motor(object):
 
@@ -88,6 +109,7 @@ class Motor(object):
         self.verboseMessage('Closing...')
         self.library.Close(self.serial_no_c)
         self._lockchange = False
+        self.isInSession = False
         self.verboseMessage('Closing done.')
 
     #####################################
