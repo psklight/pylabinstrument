@@ -44,7 +44,3 @@ ACCESS_VIOLATION = 129
 SET_DM_DIB = c_int(1)
 SET_DM_DIRECT3D = c_int(4)
 SET_DM_OPENGL = c_int(8)
-
-
-#############################################################
-### Color mode
