@@ -1,7 +1,8 @@
 from ctypes import cdll
 from .. .ctools.tools import bind, null_function
 import xml.etree.ElementTree as ET
-
+from . import KCubeDCServo as kdc
+from .tools import _supported_devices as supDv
 
 lib = cdll.LoadLibrary(r"C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.DeviceManager.dll")
 _filepath = r'C:\Program Files\Thorlabs\Kinesis\ThorlabsDefaultSettings.xml'  # might need to upgrade how I do this
@@ -127,6 +128,18 @@ class DeviceManager(object):
         speedparams['maxVelocity'] = settings['Physical']['MaxVel']
         speedparams['maxAcceleration'] = settings['Physical']['MaxAccn']
         return speedparams
+
+    def discoverByType(self, typename):
+        '''
+        Return a list of serial number of KDC101 devices connected to the computer.
+        typename -- a name of the device type to discover. For supported device, call .supportedDevices().
+        '''
+        assert typename.lower() in self.supportedDevices(), 'typename must be a member of {}'.format(self.supportedDevices())
+        result = kdc.discover(supDv.name_to_num[typename.lower()])
+        return result
+
+    def supportedDevices(self):
+        return list(supDv.name_to_num.keys())
 
 #############################################################
 ### Module's utilities functions
