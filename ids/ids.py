@@ -59,6 +59,7 @@ class DeviceManager(object):
 		plist = pd.DataFrame(columns=['CameraID', 'DeviceID', 'SensorID','InUse','SerNo','Model','Status'])
 		if n_cam<1:
 			warnings.warn('Found no camera.')
+			return plist
 
 		if 1<=n_cam<=10:
 
@@ -515,7 +516,7 @@ class Camera(object):
 	# 	else:
 	# 		raise self.notInSessionMsg()
 
-			
+
 	##############################################################
 	# UTILITIES
 	def verboseMessage(self, message):
