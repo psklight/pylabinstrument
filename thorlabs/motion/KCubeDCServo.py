@@ -116,7 +116,7 @@ class Motor(_motor.Motor):
             sleep(0.1)
             if err_code==0:
                 if self.wait:
-                    while self.getStatus() != self.library.MOVED:
+                    while self.getStatus() != self.library.MOVED and  self.getStatus() != self.library.HOMED:
                         sleep(0.1)
                     self.verboseMessage('Done moving to position.')
             else:
