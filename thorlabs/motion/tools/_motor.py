@@ -101,7 +101,7 @@ class Motor(object):
             self.isInSession = True
             self.library.ClearMessageQueue(self.serial_no_c)
             self.loadSettings()  # for, for example, convert real and device unit
-            self.verboseMessage('Opening done.')
+            self.verboseMessage('Done opening.')
         else:
             raise Exception('Failed to open and establish connection with device. Error code {}.'.format(err_code))
 
@@ -110,7 +110,7 @@ class Motor(object):
         self.library.Close(self.serial_no_c)
         self._lockchange = False
         self.isInSession = False
-        self.verboseMessage('Closing done.')
+        self.verboseMessage('Done closing.')
 
     #####################################
     def identify(self):

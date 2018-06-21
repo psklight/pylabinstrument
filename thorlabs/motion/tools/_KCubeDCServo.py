@@ -190,6 +190,7 @@ GetDeviceUnitFromRealValue = bind(lib, "CC_GetDeviceUnitFromRealValue", [POINTER
 GetHardwareInfoBlock = bind(lib, "CC_GetHardwareInfoBlock", [POINTER(c_char), POINTER(TLI_HardwareInformation)], c_short)
 
 ClearMessageQueue = bind(lib, "CC_ClearMessageQueue", [POINTER(c_char)], None)
+WaitForMessage = bind(lib, "CC_WaitForMessage", [POINTER(c_char), POINTER(c_word), POINTER(c_word), POINTER(c_dword)], c_bool)
 
 GetMotorParamsExt = bind(lib, "CC_GetMotorParamsExt", [POINTER(c_char), POINTER(c_double), POINTER(c_double), POINTER(c_double)], c_short)
 GetMotorVelocityLimits = bind(lib, "CC_GetMotorVelocityLimits", [POINTER(c_char), POINTER(c_double), POINTER(c_double)], c_short)
@@ -206,6 +207,10 @@ ResetStageToDefaults = bind(lib, "CC_ResetStageToDefaults", [POINTER(c_char)], c
 LoadSettings = bind(lib, "CC_LoadSettings", [POINTER(c_char)], c_bool)
 PersistSettings = bind(lib, "CC_PersistSettings", [POINTER(c_char)], c_bool)
 
+StartPolling = bind(lib, "CC_StartPolling", [POINTER(c_char), c_int], c_bool)
+StopPolling = bind(lib, "CC_StopPolling", [POINTER(c_char)], None)
+GetStatusBits = bind(lib, "CC_GetStatusBits", [POINTER(c_char)], c_dword)
+
 CanHome = bind(lib, "CC_CanHome", [POINTER(c_char)], c_bool)
 
 GetDCPIDParams = bind(lib, "CC_GetDCPIDParams", [POINTER(c_char), POINTER(MOT_DC_PIDParameters)], c_short)
@@ -213,3 +218,9 @@ SetDCPIDParams = bind(lib, "CC_SetDCPIDParams", [POINTER(c_char), POINTER(MOT_DC
 
 GetHomingParamsBlock = bind(lib, "CC_GetHomingParamsBlock", [POINTER(c_char), POINTER(MOT_HomingParameters)], c_short)
 SetHomingParamsBlock = bind(lib, "CC_SetHomingParamsBlock", [POINTER(c_char), POINTER(MOT_HomingParameters)], c_short)
+
+
+MOVED = 2419066120
+MOVING = 2955937064
+HOMED = 2419066116
+HOMING = 2955936536
