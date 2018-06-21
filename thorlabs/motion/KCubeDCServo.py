@@ -46,6 +46,16 @@ class Motor(_motor.Motor):
 
         self._library = K
         self._name = name
+
+        self._wait = True
+    
+    @property
+    def wait(self):
+        return self._wait
+
+    @wait.setter
+    def wait(self, value):
+        self._wait = value
     
 
     @property
@@ -69,14 +79,27 @@ class Motor(_motor.Motor):
 
     #################################################
 
+    def open(self):
+        super().open()
+        self.startPolling()
+
+    def close(self):
+        self.stopPolling()
+        super().close()
+
     def home(self):
         if self.isInSession:
+            # self.clearMessageQueue()
             canhome = self.library.CanHome(self.serial_no_c)
             if canhome:
-                self.verboseMessage('Homing')
+                self.verboseMessage('Homing...')
                 err_code = self.library.Home(self._serial_no_c)
+                sleep(0.1)
                 if err_code==0:
-                    pass
+                    if self.wait:
+                        while self.getStatus() != self.library.HOMED:
+                            sleep(0.1)
+                        self.verboseMessage('Done homing.')
                 else:
                     raise Exception('Error when homing. Error code {}.'.format(err_code))
             else:
@@ -87,10 +110,15 @@ class Motor(_motor.Motor):
 
     def moveToPosition(self, realpos):
         if self.isInSession:
-            self.verboseMessage('Moving to position')
+            # self.clearMessageQueue()
+            self.verboseMessage('Moving to position...')
             err_code = self.library.MoveToPosition(self.serial_no_c, self.getDeviceUnitFromRealValue(realpos))
+            sleep(0.1)
             if err_code==0:
-                pass
+                if self.wait:
+                    while self.getStatus() != self.library.MOVED:
+                        sleep(0.1)
+                    self.verboseMessage('Done moving to position.')
             else:
                 raise Exception('Error trying to move. Error code {}'.format(err_code))
         else:
@@ -287,6 +315,44 @@ class Motor(_motor.Motor):
         else:
             raise self.notInSessionMsg()
             
+    def startPolling(self, ms=100):
+        if self.isInSession:
+            success = self.library.StartPolling(self.serial_no_c, c_int(ms))
+            if not success:
+                raise Exception('Failed to start polling to {} ms.'.format(ms))
+        else:
+            raise self.notInSessionMsg()
+
+    def stopPolling(self):
+        if self.isInSession:
+            self.library.StopPolling(self.serial_no_c)
+        else:
+            raise self.notInSessionMsg()
+
+    def getStatus(self):
+        if self.isInSession:
+            status = self.library.GetStatusBits(self.serial_no_c)
+            return status
+        else:
+            raise self.notInSessionMsg()
+
+    def clearMessageQueue(self):
+        if self.isInSession:
+            self.verboseMessage('Clearing message queue...')
+            self.library.ClearMessageQueue(self.serial_no_c)
+            self.verboseMessage('Done clearing message queue.')
+        else:
+            raise self.notInSessionMsg()
+
+    def waitForMessage(self):
+        if self.isInSession:
+            msgType = c_word()
+            msgId = c_word()
+            msgData = c_dword()
+            success = self.library.WaitForMessage(self.serial_no_c, byref(msgType), byref(msgId), byref(msgData))
+            return (msgType.value, msgId.value, msgData.value)
+        else:
+            raise self.notInSessionMsg()
 
     #####################################
     # UTILITY FUNCTIONS
