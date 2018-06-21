@@ -19,7 +19,8 @@ from ctypes import (
     c_char_p,
     c_wchar_p,
     ARRAY,
-    c_void_p
+    c_void_p,
+    c_ubyte
 )
 
 c_word = c_ushort
@@ -27,6 +28,11 @@ c_dword = c_ulong
 
 from ...ctools.tools import bind, null_function
 from . import _enum as enum
+
+lib_api_path = r"C:\Windows\System32\uEye_api_64.dll"
+lib_api = cdll.LoadLibrary(lib_api_path)
+
+
 
 
 class StructureEx(Structure):
@@ -50,7 +56,7 @@ class StructureEx(Structure):
                 setattr(self, f, ctype(float(d[f])))
 
     def __str__(self):
-        return print(self.getdict())
+        return str(self.getdict())
 
 
 class UEYE_CAMERA_INFO(StructureEx):
@@ -81,13 +87,44 @@ class UEYE_CAMERA_LIST_Ex(StructureEx):
     # _fields_ = [("count", c_ulong),
     #             ("cameras", ARRAY(UEYE_CAMERA_INFO,100)) ]
 
+class CAMINFO(StructureEx):
+    _fields_ = [("SerialNo", 12*c_char),
+                ("ID", 20*c_char),
+                ("Version", 10*c_char),
+                ("Date", 12*c_char),
+                ("Select", c_ubyte),
+                ("Type", c_ubyte),
+                ("Reserved", 8*c_char)]
 
-lib_api_path = r"C:\Windows\System32\uEye_api_64.dll"
-lib_api = cdll.LoadLibrary(lib_api_path)
+    def __str__(self):
+        super().__str__()
+
+
+class SENSORINFO(StructureEx):
+    _fields_ = [("SensorID", c_word),
+                ("Sensorname", 32*c_char),
+                ("ColorMode", c_char),
+                ("MaxWidth", c_dword),
+                ("MaxHeight", c_dword),
+                ("MasterGain", c_bool),
+                ("RGain", c_bool),
+                ("GGain", c_bool),
+                ("BGain", c_bool),
+                ("GlobShutter", c_bool),
+                ("PixelSize", c_word),
+                ("UpperLeftBayerPixel", c_char),
+                ("Reserved", 13*c_char)]
+
+######################################################################################
+######################################################################################
+######################################################################################
 
 GetNumberOfCameras = bind(lib_api, "is_GetNumberOfCameras", [POINTER(c_int)], c_int)
 GetCameraList = bind(lib_api, "is_GetCameraList", [POINTER(UEYE_CAMERA_LIST)], c_int)
 # GetCameraListEx = bind(lib_api, "is_GetCameraList", [POINTER(UEYE_CAMERA_LIST_Ex)], c_int)
+
+GetCameraInfo = bind(lib_api, "is_GetCameraInfo", [enum.HIDS, POINTER(CAMINFO)], c_int)
+GetSensorInfo = bind(lib_api, "is_GetSensorInfo", [enum.HIDS, POINTER(SENSORINFO)], c_int)
 
 InitCamera = bind(lib_api, "is_InitCamera", [POINTER(enum.HIDS), POINTER(enum.HWND)], c_int)
 ExitCamera = bind(lib_api, "is_ExitCamera", [enum.HIDS], c_int)
@@ -102,8 +139,14 @@ SetImageMem = bind(lib_api, "is_SetImageMem", [enum.HIDS, c_char_p, c_int], c_in
 CopyImageMem = bind(lib_api, "is_CopyImageMem", [enum.HIDS, c_char_p, c_int, c_char_p], c_int)
 FreeImageMem = bind(lib_api, "is_FreeImageMem", [enum.HIDS, c_char_p, c_int], c_int)
 
-CaptureSingle = bind(lib_api, "is_FreezeVideo", [enum.HIDS, c_int], c_int)
+FreezeVideo = bind(lib_api, "is_FreezeVideo", [enum.HIDS, c_int], c_int)
+StopLiveVideo = bind(lib_api, "is_StopLiveVideo", [enum.HIDS, c_int], c_int)
 
 SetExternalTrigger = bind(lib_api, "is_SetExternalTrigger", [enum.HIDS, c_int], c_int)
+
+PixelClock = bind(lib_api, "is_PixelClock", [enum.HIDS, c_uint, c_void_p, c_uint], c_int)
+Exposure = bind(lib_api, "is_Exposure", [enum.HIDS, c_uint, c_void_p, c_uint], c_int)
+# GetFramesPerSecond = bind(lib_api, "is_GetFramesPerSecond", [enum.HIDS, POINTER(c_double)])
+# SetFrameRate = bind(lib_api, "is_SetFrameRate", [enum.HIDS, c_double, POINTER(c_double)], c_int)
 
 BlackLevel = bind(lib_api, "is_Blacklevel", [enum.HIDS, c_uint, c_void_p, c_uint], c_int)

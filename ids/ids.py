@@ -47,13 +47,19 @@ class DeviceManager(object):
 		else:
 			return num.value
 
-	def getCameraList(self):
+	def getCameraList(self, show=False):
+		"""
+		Return a pandas-based list of cameras discovered.
+		Inputs:
+		show -- a boolean indicating whether to show the list in the command prompt or not.
+		"""
 		n_cam = self.getNumberOfCameras()
 
 		plist = pd.DataFrame()
 		plist = pd.DataFrame(columns=['CameraID', 'DeviceID', 'SensorID','InUse','SerNo','Model','Status'])
 		if n_cam<1:
 			warnings.warn('Found no camera.')
+			return plist
 
 		if 1<=n_cam<=10:
 
@@ -92,9 +98,32 @@ class DeviceManager(object):
 			    camera = cameras[i]
 			    data = [camera.CameraID, camera.DeviceID, camera.SensorID, camera.InUse, camera.SerNo, camera.Model, camera.Status]
 			    plist.loc[i] = data
-			
+		
+		if show:
+			print(plist)
 		return plist
-			
+
+	def connect(self, cameraId):
+		"""
+		Return an instnace of Camera class initiated with the camera id provided.
+		"""
+		assert type(cameraId) is int, 'cameraId must be integer from the .getCameraList.'
+		camList = self.getCameraList()
+		if cameraId in camList['CameraID'].values:
+			subdata = camList[camList['CameraID']==cameraId]
+			inUse = subdata['InUse'].values[0]
+			if inUse==0:
+				return Camera(cameraId)
+			else:
+				raise Exception('The camera (id: {}) is currently in use.'.format(cameraId))
+		else:
+			raise ValueError('cameraId given is not in the list of discovered camera. Check .getCameraList() for the available camera id.')
+
+
+
+##########################################################################
+##########################################################################
+##########################################################################
 
 class Camera(object):
 
@@ -109,6 +138,34 @@ class Camera(object):
 		self._height = 1200
 		self._bitpixel = 8
 
+	@property
+	def cameraInfo(self):
+		if self.isInSession:
+			return self.getCameraInfo()
+		else:
+			raise self.notInSessionMsg()
+
+	@property
+	def sensorInfo(self):
+		if self.isInSession:
+			return self.getSensorInfo()
+		else:
+			raise self.notInSessionMsg()
+
+	@property
+	def maxWidth(self):
+		if self.isInSession:
+			return self.sensorInfo['MaxWidth']
+		else:
+			raise self.notInSessionMsg()
+
+	@property
+	def maxHeight(self):
+		if self.isInSession:
+			return self.sensorInfo['MaxHeight']
+		else:
+			raise self.notInSessionMsg()
+	
 	@property
 	def width(self):
 		return self._width
@@ -190,11 +247,16 @@ class Camera(object):
 		err_code = self.library.InitCamera(pointer(self.cameraId_c), enum.HWND())
 		if err_code == enum.SUCCESS:
 			self.isInSession = True
-			self.setDisplayMode()
+			self.width = self.maxWidth
+			self.height = self.maxHeight
 			self.setColorMode()
 			self.allocImgMem()
 			self.setImgMem()
+			self.setDisplayMode()
 			self.setExternalTrigger()
+			pxclock = self.getPixelClockList()
+			self.setPixelClock(pxclock[0])
+			self.setExposureTime(10.0)
 			self.verboseMessage('Done opening camera session. Success.')
 		else:
 			raise Exception('Failed to open camera session. Error code: {}.'.format(err_code))
@@ -211,21 +273,27 @@ class Camera(object):
 
 
 	def captureSingle(self):
+		"""
+		Return a numpy data array of captured image.
+		"""
 		if self.isInSession:
-
-			#self.setImgMem()
-
 			self.verboseMessage('Capturing a single frame...')
-			err_code = self.library.CaptureSingle(self.cameraId_c, ctypes.c_int(0x0000))  # #IS_DONT_WAIT  = 0x0000, or IS_GET_LIVE = 0x8000
-			sleep(0.5)
+			self.setImgMem()
+			sleep(0.2)
+			err_code = self.library.FreezeVideo(self.cameraId_c, ueye.IS_WAIT)
+			# err_code = self.library.CaptureSingle(self.cameraId_c, ctypes.c_int(0x0000))  # #IS_DONT_WAIT  = 0x0000, or IS_GET_LIVE = 0x8000
+			sleep(0.2)
 			if err_code==enum.SUCCESS:
 				ImageData = np.ones((self.height,self.width), dtype=np.uint8)
 				err_code = self.library.CopyImageMem(self.cameraId_c, self.imgMem['pcImgMem'], self.imgMem['pid'], ImageData.ctypes.data_as(ctypes.c_char_p))
+				sleep(0.5)
 				if err_code!=enum.SUCCESS:
+					err_code = self.stopLiveVideo()
 					raise Exception('Failed to copy image from memory. Error code: {}.'.format(err_code))
 				else:
+					self.verboseMessage('Done capturing a single frame.')
+					err_code = self.stopLiveVideo()
 					return ImageData
-				self.verboseMessage('Done capturing a single frame.')
 			else:
 				raise Exception('Failed to capture a single frame. Error code: {}.'.format(err_code))
 		else:
@@ -242,7 +310,7 @@ class Camera(object):
 		else:
 			raise self.notInSessionMsg()
 
-	def setColorMode(self, mode = ueye.IS_CM_SENSOR_RAW8):
+	def setColorMode(self, mode = ueye.IS_CM_MONO8):
 		if self.isInSession:
 			self.verboseMessage('Setting color mode...')
 			err_code = self.library.SetColorMode(self.cameraId_c, mode)
@@ -280,7 +348,7 @@ class Camera(object):
 			pcImgMem = ctypes.c_char_p()  # placeholder for image memory
 			pid = c_int()  # ID for the allocated memory
 
-			self.verboseMessage('Allocating image memory...')
+			self.verboseMessage('Allocating image memory (w={}, h={})...'.format(w.value,h.value))
 
 			err_code = self.library.AllocImageMem(self.cameraId_c, w, h, px, byref(pcImgMem), byref(pid))
 			if err_code==enum.SUCCESS:
@@ -299,7 +367,7 @@ class Camera(object):
 			self.verboseMessage('Setting image memory...')
 			err_code = self.library.SetImageMem(self.cameraId_c, self.imgMem['pcImgMem'], self.imgMem['pid'])
 			if err_code==enum.SUCCESS:
-				self.verboseMessage('Done setting image memory. pid: {}'.format(self.imgMem['pid']))
+				self.verboseMessage('Done setting image memory. pid: {}'.format(self.imgMem['pid'].value))
 			else:
 				return Exception('Failed to set image memory. Error code: {}'.format(err_code))
 		else:
@@ -315,6 +383,139 @@ class Camera(object):
 				raise Exception('Failed to free image memory. Error code: {}.'.format(err_code))
 		else:
 			raise self.notInSessionMsg()
+
+	def getCameraInfo(self):
+		if self.isInSession:
+			camInfo = self.library.CAMINFO()
+			err_code = self.library.GetCameraInfo(self.cameraId_c, byref(camInfo))
+			if err_code==enum.SUCCESS:
+				return camInfo.getdict()
+			else:
+				raise Exception('Failed to get camera info. Error code: {}.'.format(err_code))
+		else:
+			raise self.notInSessionMsg()
+			
+	def getSensorInfo(self):
+		if self.isInSession:
+			sensInfo = self.library.SENSORINFO()
+			err_code = self.library.GetSensorInfo(self.cameraId_c, byref(sensInfo))
+			if err_code==enum.SUCCESS:
+				return sensInfo.getdict()
+			else:
+				raise Exception('Failed to get sensor info. Error code: {}.'.format(err_code))
+		else:
+			raise self.notInSessionMsg()
+
+	def stopLiveVideo(self):
+		if self.isInSession:
+			self.verboseMessage("Stopping live video...")
+			err_code = self.library.StopLiveVideo(self.cameraId_c, ctypes.c_int(0x0000))  # #IS_DONT_WAIT  = 0x0000, or IS_GET_LIVE = 0x8000
+			if err_code==enum.SUCCESS:
+				self.verboseMessage("Done stopping live video.")
+			else:
+				raise Exception('Failed to stop live video. Error code: {}.'.format(err_code))
+		else:
+			raise self.notInSessionMsg()
+
+	def getPixelClockList(self):
+		if self.isInSession:
+			nclocks = ctypes.c_uint(0)
+			err_code = self.library.PixelClock(self.cameraId_c, ueye.IS_PIXELCLOCK_CMD_GET_NUMBER, byref(nclocks), ctypes.sizeof(nclocks))
+			if err_code!=enum.SUCCESS:
+				raise Exception('Failed to get pixel clock number. Error code: {}.'.format(err_code))
+			clocklist = (ctypes.c_uint*150)()
+			err_code = self.library.PixelClock(self.cameraId_c, ueye.IS_PIXELCLOCK_CMD_GET_LIST, byref(clocklist), nclocks.value*ctypes.sizeof(ctypes.c_uint))
+			if err_code!=enum.SUCCESS:
+				raise Exception('Failed to get pixel clock list. Error code: {}.'.format(err_code))
+			return clocklist[0:nclocks.value]
+		else:
+			raise self.notInSessionMsg()
+
+	def getPixelClock(self):
+		if self.isInSession:
+			clock = ctypes.c_uint(0)
+			err_code = self.library.PixelClock(self.cameraId_c, ueye.IS_PIXELCLOCK_CMD_GET, byref(clock), ctypes.sizeof(clock))
+			if err_code!=enum.SUCCESS:
+				raise Exception('Failed to get a current pixel clock. Error code: {}.'.format(err_code))
+			return clock.value
+		else:
+			raise self.notInSessionMsg()
+
+	def setPixelClock(self, val):
+		"""
+		Inputs:
+		val -- a clock rate in MHz
+		"""
+		if self.isInSession:
+			val = int(val)
+			if val not in self.getPixelClockList():
+				raise ValueError('Clock rate must be a member of {}.'.format(self.getPixelClockList))
+			self.verboseMessage('Setting pixel clock to {} MHz...'.format(val))
+			val_c = ctypes.c_uint(val)
+			err_code = self.library.PixelClock(self.cameraId_c, ueye.IS_PIXELCLOCK_CMD_SET, byref(val_c), ctypes.sizeof(val_c))
+			if err_code!=enum.SUCCESS:
+				raise Exception('Failed to set pixel clock. Error code: {}.'.format(err_code))
+			self.verboseMessage('Done setting pixel clock.')
+		else:
+			raise self.notInSessionMsg()
+
+	def getExposureTime(self):
+		if self.isInSession:
+			expTime = ctypes.c_double(0)
+			err_code = self.library.Exposure(self.cameraId_c, ueye.IS_EXPOSURE_CMD_GET_EXPOSURE, byref(expTime), ctypes.sizeof(expTime))
+			if err_code!=enum.SUCCESS:
+				raise Exception('Failed to get current exposure time. Error code: {}.'.format(err_code))
+			return expTime.value
+		else:
+			raise self.notInSessionMsg()
+
+	def getMaxExposureTime(self):
+		if self.isInSession:
+			expTime = ctypes.c_double(0)
+			err_code = self.library.Exposure(self.cameraId_c, ueye.IS_EXPOSURE_CMD_GET_EXPOSURE_RANGE_MAX, byref(expTime), ctypes.sizeof(expTime))
+			if err_code!=enum.SUCCESS:
+				raise Exception('Failed to get current exposure time. Error code: {}.'.format(err_code))
+			return expTime.value
+		else:
+			raise self.notInSessionMsg()
+
+	def getMinExposureTime(self):
+		if self.isInSession:
+			expTime = ctypes.c_double(0)
+			err_code = self.library.Exposure(self.cameraId_c, ueye.IS_EXPOSURE_CMD_GET_EXPOSURE_RANGE_MIN, byref(expTime), ctypes.sizeof(expTime))
+			if err_code!=enum.SUCCESS:
+				raise Exception('Failed to get current exposure time. Error code: {}.'.format(err_code))
+			return expTime.value
+		else:
+			raise self.notInSessionMsg()
+
+
+	def setExposureTime(self, val):
+		if self.isInSession:
+			mintime = self.getMinExposureTime()
+			maxtime = self.getMaxExposureTime()
+			if not mintime<=val<=maxtime:
+				raise ValueError('Exposure time must be between {} to {} ms.'.format(mintime, maxtime))
+			self.verboseMessage('Setting exposure time to {} ms...'.format(val))
+			val_c = ctypes.c_double(val)
+			err_code = self.library.Exposure(self.cameraId_c, ueye.IS_EXPOSURE_CMD_SET_EXPOSURE, byref(val_c), ctypes.sizeof(val_c))
+			if err_code!=enum.SUCCESS:
+				raise Exception('Failed to set exposure time.')
+			self.verboseMessage('Done setting exposure time.')
+		else:
+			raise self.notInSessionMsg()
+
+
+	# def getFrameRate(self):
+	# 	if self.isInSession:
+	# 		rate = ctypes.c_double(0.0)
+	# 		err_code = self.library.GetFramesPerSecond(self.cameraId_c, byref(rate))
+	# 		if err_code!=enum.SUCCESS:
+	# 			raise Exception('Failed to get frame rate. Error code: {}.'.format(err_code))
+	# 		return rate.value
+	# 	else:
+	# 		raise self.notInSessionMsg()
+
 
 	##############################################################
 	# UTILITIES
