@@ -22,7 +22,7 @@ from ctypes import (
     create_string_buffer
 )
 
-from .tools import _visa_enum as enum
+from ...ctools import _visa_enum as enum
 from .tools import _TLPM_wrapper as K
 from visa import constants as vicons
 from time import sleep
@@ -34,7 +34,7 @@ class PowerMeter(object):
     def __init__(self, resourceName, modelName = '', name=''):
         """
         INPUTS:
-        resourceName -- a (python) string of the device to be connected. It has a specific format. Use Device Manager object to obtaing the resource name for the targeted device.
+        resourceName -- a (python, raw) string of the device to be connected. It has a specific format. Use Device Manager object to obtaing the resource name for the targeted device.
         modelName -- a b-string for model name, such as b'PM100'. This would be used to check whether functions can be run on the model or not.
         """
         self._lockchange = False
@@ -153,9 +153,9 @@ class PowerMeter(object):
             status = self.library.Close(self.instrumentHandle)
             if status==vicons.VI_SUCCESS:
                 self.verboseMessage('Done closing session.')
-                self._idQuery = None
-                self._resetDevice = None
-                self._instrumentHandle = None
+                self.idQuery = None
+                self.resetDevice = None
+                self.instrumentHandle = None
 
 
     ######################################

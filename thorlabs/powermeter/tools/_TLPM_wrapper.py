@@ -27,7 +27,7 @@ c_dword = c_ulong
 lib = cdll.LoadLibrary(r"C:\Program Files\IVI Foundation\VISA\Win64\Bin\TLPM_64.dll")
 
 from ....ctools.tools import bind, null_function
-from ._visa_enum import *
+from ....ctools._visa_enum import *
 
 Init = bind(lib, "TLPM_init", [ViRsrc, ViBoolean, ViBoolean, ViPSession], ViStatus)
 Open = bind(lib, "TLPM_init", [ViRsrc, ViBoolean, ViBoolean, ViPSession], ViStatus)
