@@ -22,7 +22,7 @@ from ctypes import (
     create_string_buffer
 )
 
-from .tools import _visa_enum as enum
+from ...ctools import _visa_enum as enum
 from .tools import _TLPM_wrapper as K
 from visa import constants as vicons
 from time import sleep
