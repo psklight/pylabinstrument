@@ -30,6 +30,7 @@ from time import sleep
 from .tools import _KCubeDCServo as K
 from .tools import _motor
 from .tools import _supported_devices as supDv
+import numpy as np
 
 
 class Motor(_motor.Motor):
@@ -97,7 +98,9 @@ class Motor(_motor.Motor):
                 sleep(0.1)
                 if err_code==0:
                     if self.wait:
-                        while self.getStatus() != self.library.HOMED:
+                        # while self.getStatus() != self.library.HOMED:
+                        #     sleep(0.1)
+                        while isMoving(self.getStatus()):
                             sleep(0.1)
                         self.verboseMessage('Done homing.')
                 else:
@@ -116,7 +119,7 @@ class Motor(_motor.Motor):
             sleep(0.1)
             if err_code==0:
                 if self.wait:
-                    while self.getStatus() != self.library.MOVED and  self.getStatus() != self.library.HOMED:
+                    while isMoving(self.getStatus()):
                         sleep(0.1)
                     self.verboseMessage('Done moving to position.')
             else:
@@ -354,6 +357,38 @@ class Motor(_motor.Motor):
         else:
             raise self.notInSessionMsg()
 
+
+class Rotator(Motor):
+    
+    ## todo
+    ## 1. mod for incoming angle
+    ## 2. move to positive angle before homing
+
+    def moveToPosition(self, realpos):
+        pos = np.mod(realpos, 360)
+        super().moveToPosition(pos)
+
+    def home(self):
+        self.moveToPosition(0)
+        super().home()
+
+
+class Translator(Motor):
+    pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     #####################################
     # UTILITY FUNCTIONS
 def supportedDevices():
@@ -388,3 +423,10 @@ def identify(serial_no):
     motor.open()
     motor.identify()
     motor.close()
+
+def isMoving(status):
+    statusbit = bin(status)
+    f = statusbit[-5]
+    b = statusbit[-6]
+    moving = f=="1" or b=="1"
+    return moving

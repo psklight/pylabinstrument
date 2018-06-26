@@ -135,7 +135,7 @@ class Motor(object):
         
     def getDeviceInfo(self):
         self.library.BuildDeviceList()
-        di = self.library.DeviceInfo()
+        di = self.library.TLI_DeviceInfo()
         err_code = self.library.GetDeviceInfo(self.serial_no_c, byref(di))
         if err_code==0:
             raise Exception('Failed to get device info from self.library.GetDeviceInfo.')
