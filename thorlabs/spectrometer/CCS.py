@@ -11,14 +11,17 @@ from time import sleep
 import numpy as np
 
 SCANNING = 1
+PIX_NUM = 3648
 
-class CCS(VisaObject):
+class ccs(VisaObject):
 
 	def __init__(self, resourceName, modelName = '', name=''):
 		super().__init__(resourceName, modelName, name)
 		self.library = K
-		self._integrationTime = 0.01
+		self.integrationTime = 0.01
 		self.averageNumber = 5
+		self.pixel_num = PIX_NUM
+	
 
 	@property
 	def averageNumber(self):
