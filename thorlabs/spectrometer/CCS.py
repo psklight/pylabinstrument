@@ -67,7 +67,7 @@ class ccs(VisaObject):
 			self.resetDevice = resetDevice
 			self.setIntegrationTime(self.integrationTime)
 		else:
-			raise Exception('Failed to establish session with device. Error code: {} : {}.'.format(status, ViErrors(status).getMessage()))
+			raise Exception('Failed to establish session with device. Error code: {} : {}.'.format(status))
 
 		return status
 
