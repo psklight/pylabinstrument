@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-name = 'pyoptics'
+name = 'pylabinstrument'
 
 def initialize(reset=False):
 
