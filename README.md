@@ -1,4 +1,4 @@
-# pyoptics
+# pylabinstrument
 Tools for optics focusing on experimental stuff for now.
 
 Note: Still work in progress. Contact me if interested or having questions.
