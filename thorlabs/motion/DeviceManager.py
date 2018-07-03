@@ -4,8 +4,16 @@ import xml.etree.ElementTree as ET
 from . import KCubeDCServo as kdc
 from .tools import _supported_devices as supDv
 
-lib = cdll.LoadLibrary(r"C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.DeviceManager.dll")
-_filepath = r'C:\Program Files\Thorlabs\Kinesis\ThorlabsDefaultSettings.xml'  # might need to upgrade how I do this
+
+from ...locateDll import locateDll
+libname0 = "Thorlabs.MotionControl.DeviceManager.dll"
+foldername = "Thorlabs"
+dllpath0 = locateDll(libname0, foldername)
+lib = cdll.LoadLibrary(dllpath0.replace("\\","\\\\"))
+
+filename = "ThorlabsDefaultSettings.xml"
+_filepath = locateDll(filename, foldername)
+print(_filepath)
 
 
 tree = ET.parse(_filepath)

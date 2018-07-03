@@ -25,7 +25,12 @@ c_word = c_ushort
 c_dword = c_ulong
 
 
-lib = cdll.LoadLibrary(r"C:\Program Files\IVI Foundation\VISA\Win64\Bin\TLCCS_64.dll")
+from ....locateDll import locateDll
+libname = "TLCCS_64.dll"
+foldername = "IVI Foundation"
+dllpath  = locateDll(libname,  foldername)
+lib = cdll.LoadLibrary(dllpath.replace("\\","\\\\"))
+
 
 from ....ctools.tools import bind, null_function
 from ....ctools._visa_enum import *

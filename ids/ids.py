@@ -11,8 +11,7 @@ from time import sleep
 from .tools import _ids_wrapper as K
 from .tools import _enum as enum
 
-# _lib_api_path = r"C:\Windows\System32\uEye_api_64.dll"
-# _lib = cdll.LoadLibrary(lib_api_path)
+
 
 class DeviceManager(object):
 

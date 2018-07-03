@@ -24,14 +24,20 @@ c_dword = c_ulong
 
 from .. ..ctools.tools import bind, null_function
 from ._enumeration import *
-from .. import DeviceManager as dm
 
 from comtypes import _safearray
 import ctypes
 from ctypes import byref, pointer
 from time import sleep
 
-lib = cdll.LoadLibrary(r"C:\Program Files\Thorlabs\Kinesis\Thorlabs.MotionControl.KCube.Solenoid.dll")
+from ....locateDll import locateDll
+libname0 = "Thorlabs.MotionControl.DeviceManager.dll"
+libname = "Thorlabs.MotionControl.KCube.Solenoid.dll"
+foldername = "Thorlabs"
+dllpath0 = locateDll(libname0, foldername)
+dllpath  = locateDll(libname,  foldername)
+lib0 = cdll.LoadLibrary(dllpath0.replace("\\","\\\\"))
+lib = cdll.LoadLibrary(dllpath.replace("\\","\\\\"))
 
 class StructureEx(Structure):
 

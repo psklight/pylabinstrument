@@ -23,8 +23,14 @@ from ctypes import (
 c_word = c_ushort
 c_dword = c_ulong
 
-# lib = cdll.LoadLibrary(r"C:\Program Files (x86)\IVI Foundation\VISA\WinNT\Bin\TLPM_32.dll")
-lib = cdll.LoadLibrary(r"C:\Program Files\IVI Foundation\VISA\Win64\Bin\TLPM_64.dll")
+
+from ....locateDll import locateDll
+libname = "TLPM_64.dll"
+foldername = "IVI Foundation"
+dllpath  = locateDll(libname,  foldername)
+lib = cdll.LoadLibrary(dllpath.replace("\\","\\\\"))
+
+
 
 from ....ctools.tools import bind, null_function
 from ....ctools._visa_enum import *
