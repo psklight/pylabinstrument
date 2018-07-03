@@ -37,7 +37,7 @@ from ....ctools._visa_enum import *
 
 Init = bind(lib, "tlccs_init", [ViRsrc, ViBoolean, ViBoolean, ViPSession], ViStatus)
 Open = bind(lib, "tlccs_init", [ViRsrc, ViBoolean, ViBoolean, ViPSession], ViStatus)
-Close = bind(lib, "tlccs_close", [ViSession], ViSession)
+Close = bind(lib, "tlccs_close", [ViSession], ViStatus)
 
 GetDeviceStatus = bind(lib, "tlccs_getDeviceStatus", [ViSession, POINTER(c_int32)], ViStatus)
 
