@@ -29,10 +29,15 @@ c_dword = c_ulong
 from ...ctools.tools import bind, null_function
 from . import _enum as enum
 
-lib_api_path = r"C:\Windows\System32\uEye_api_64.dll"
-lib_api = cdll.LoadLibrary(lib_api_path)
+# lib_api_path = r"C:\Windows\System32\uEye_api_64.dll"
+# lib_api = cdll.LoadLibrary(lib_api_path)
 
-
+from ...locateDll import locateDll
+libname = "uEye_api_64.dll"
+foldername = "System32"
+dllpath  = locateDll(libname,  foldername, "C:\\Windows")
+print(dllpath)
+lib_api = cdll.LoadLibrary(dllpath.replace("\\","\\\\"))
 
 
 class StructureEx(Structure):
