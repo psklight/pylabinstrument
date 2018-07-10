@@ -13,7 +13,7 @@ import numpy as np
 SCANNING = 1
 PIX_NUM = 3648
 
-class ccs(VisaObject):
+class CCS(VisaObject):
 
 	def __init__(self, resourceName, modelName = '', name=''):
 		super().__init__(resourceName, modelName, name)
