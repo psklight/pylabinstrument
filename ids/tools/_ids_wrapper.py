@@ -36,7 +36,6 @@ from ...locateDll import locateDll
 libname = "uEye_api_64.dll"
 foldername = "System32"
 dllpath  = locateDll(libname,  foldername, "C:\\Windows")
-print(dllpath)
 lib_api = cdll.LoadLibrary(dllpath.replace("\\","\\\\"))
 
 

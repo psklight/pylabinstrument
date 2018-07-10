@@ -9,7 +9,6 @@ confData = pd.read_csv(configFullpath)
 def openfile_dialog(foldername="a"):
     app = QApplication([dir])
     msg = "Select " + foldername +" folder"
-    print(msg)
     fname = QFileDialog.getExistingDirectory(None, msg, '/home')
     return str(fname)
 
@@ -39,7 +38,6 @@ def locateDll(dllname, foldername, root="C:\\Program Files"):
 				nrow = confData.shape[0]+1
 				confData.loc[nrow,:] = [dllname, dllpath]
 				confData.to_csv(configFullpath, index = False)
-				print('saved')
 				return dllpath
 			else:
 				raise Exception('Fail to locate {}'.format(foldername))

@@ -13,7 +13,6 @@ lib = cdll.LoadLibrary(dllpath0.replace("\\","\\\\"))
 
 filename = "ThorlabsDefaultSettings.xml"
 _filepath = locateDll(filename, foldername)
-print(_filepath)
 
 
 tree = ET.parse(_filepath)
