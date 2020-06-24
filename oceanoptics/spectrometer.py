@@ -3,12 +3,13 @@ import re
 import numpy as np
 
 
-def load_spectrum(filename, wlmin=None, wlmax=None):
+def load_spectrum(filename, wlmin=None, wlmax=None, rename_column=True):
     """
     Load spectral data captured by Ophir's spectrometer. The header lines are detected using a phrase "Begin Spectral Data". The first column of the data is assumed to be wavelength.
     :param filename: filepath to the file to be loaded
     :param wlmin: min value of wavelength to filter when loaded
     :param wlmax: max value of wavelength to filter when loaded
+    :param rename_column: If True, rename columns to ['wavelength', 'spectral power density']. If a list, rename to that list.
     :return:
     """
     # eliminate metadata at the beginning
@@ -26,5 +27,10 @@ def load_spectrum(filename, wlmin=None, wlmax=None):
         wlmax = data[0].max()
 
     data = data.loc[data[0].between(wlmin, wlmax)]
+
+    if rename_column is True:
+        data.columns = ['wavelength', 'spectral power density']
+    if isinstance(rename_column, list):
+        data.columns = rename_column
 
     return data
