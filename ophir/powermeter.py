@@ -36,25 +36,34 @@ class OphirPM:
     def open(self):
         if self.device_handle is None:
             self.device_handle = OphirCOM.OpenUSBDevice(self.serial_no)
+            OphirCOM.StartStream(self.device_handle, self.channel)
         else:
             raise Exception("Communication is already open.")
 
     def close(self):
         if self.device_handle is not None:
+            OphirCOM.StopStream(self.device_handle, self.channel)
             OphirCOM.Close(self.device_handle)
             self.device_handle = None
 
-    def measure(self, channel=None, treat_data=True):
-        if channel is None:
-            channel = self.channel
-        OphirCOM.StartStream(self.device_handle, channel)
-        time.sleep(self.data_delay_time)
-        data = OphirCOM.GetData(self.device_handle, channel)
-        OphirCOM.StopStream(self.device_handle, channel)
-        if treat_data:
-            return treat_data_func(data)
-        else:
-            return data
+    def measure(self, treat_data=True, max_attempt=1000):
+        # if channel is None:
+        #     channel = self.channel
+        # OphirCOM.StartStream(self.device_handle, channel)
+        # time.sleep(self.data_delay_time)
+        count = 0
+        while True:
+            data = OphirCOM.GetData(self.device_handle, self.channel)
+            # OphirCOM.StopStream(self.device_handle, channel)
+            if treat_data:
+                result = treat_data_func(data)
+                if result.size!=0:
+                    return result
+                else:
+                    count += 1
+            else:
+                return data
+        return data
 
 
 def treat_data_func(data):
