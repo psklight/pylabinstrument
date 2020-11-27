@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import numpy as np
 import time
+import warnings
 
 import seabreeze.spectrometers as sb
 
@@ -15,26 +16,36 @@ class Spectrometer(sb.Spectrometer):
     def __init__(self, device_name):
         super().__init__(self, device_name)
 
-    def set_integration_time(self, time_ms):
+    def set_integration_time(self, time_ms, burn=15):
         """
         Set integration time.
         :param time_ms: number of time in millisecond
+        :parm burn: non-negative integer to measure spectrum to update dark count correction.
         """
         self.integration_time_micros(time_ms*1000.0)
+        for i in range(max[0, burn]):
+            self.measure()
+
 
     def get_wavelength(self):
         return self.wavelengths()
 
-    def measure(self):
-        return self.intensities()
+    def measure(self, correct_dark_counts=False, correct_nonlinearity=False, verbose=True):
+        try:
+            result = self.intensities(correct_dark_counts=correct_dark_counts, correct_nonlinearity=correct_nonlinearity)
+        except Exception as e:
+            result = self.intensities()
+            if verbose:
+                warnings.warn("Measured spectrum without corrections for dark counts or nonlinearity, probably the device does not suppor this.")
+        return result
 
-    def measure_average(self, n=1, wait=0.1):
+    def measure_average(self, n=1, wait=0.1, correct_dark_counts=False, correct_nonlinearity=False, verbose=True):
         assert n>1, 'n must be more than 0.'
         assert wait>=0.0, 'wait must be equal to or more than 0.'
         wl = self.get_wavelength()
         spec_read = np.zeros(shape=wl.shape)
         for i in range(0, n):
-            spec_read += self.measure()
+            spec_read += self.measure(correct_dark_counts=correct_dark_counts, correct_nonlinearity=correct_nonlinearity, verbose=verbose)
             time.sleep(wait)
         spec_read = spec_read/n
         spec_bg_df = pd.DataFrame({'wavelength': wl, 'count': spec_bg})
